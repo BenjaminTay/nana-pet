@@ -3,6 +3,10 @@
 import os
 import sys
 
+if sys.platform != 'darwin':
+    print('SKIP: test_mac.py 仅验证 macOS Quartz 快捷键映射')
+    sys.exit(0)
+
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
