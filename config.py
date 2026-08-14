@@ -107,6 +107,8 @@ def get_autostart():
     """查询开机自启状态"""
     if IS_MAC:
         return os.path.exists(MAC_LAUNCH_AGENT)
+    if sys.platform != 'win32':
+        return False
     import winreg
     try:
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
@@ -140,6 +142,8 @@ def set_autostart(enabled):
                 os.remove(MAC_LAUNCH_AGENT)
             except OSError:
                 pass
+        return
+    if sys.platform != 'win32':
         return
     import winreg
     key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,

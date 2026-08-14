@@ -4,7 +4,7 @@ import os
 import sys
 
 if sys.platform != 'darwin':
-    print('SKIP: test_mac.py 仅验证 macOS Quartz 快捷键映射')
+    print('SKIP: macOS-only Quartz hotkey mapping test')
     sys.exit(0)
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
