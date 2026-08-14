@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """配置读写：宠物位置/大小/喂食时间、说话、穿透、自启（Win/mac 双平台）"""
 import json
+import math
 import os
 import plistlib
 import sys
@@ -28,6 +29,13 @@ os.makedirs(DATA_DIR, exist_ok=True)
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 
 SIZE_FACTOR = {'small': 0.4, 'medium': 0.53, 'large': 0.66}   # 对标月薪喵实测尺寸
+BASE_SIZE_FACTOR = SIZE_FACTOR['medium']
+SCALE_PRESETS = {
+    key: factor / BASE_SIZE_FACTOR for key, factor in SIZE_FACTOR.items()
+}
+MIN_SCALE = 0.75
+MAX_SCALE = 2.0
+SCALE_STEP = 0.05
 
 WINDOWS_DEFAULT_HOTKEYS = {
     'dance': 'Ctrl+Alt+D',
@@ -88,7 +96,50 @@ def load():
     for key, value in PLATFORM_DEFAULT_HOTKEYS.items():
         hotkeys.setdefault(key, value)
     cfg['hotkeys'] = hotkeys
+    pets = cfg.get('pets')
+    if isinstance(pets, list):
+        for pet in pets:
+            if isinstance(pet, dict):
+                pet.setdefault('scale', scale_from_pet(pet))
     return cfg
+
+
+def clamp_scale(scale):
+    """将用户输入的相对缩放比例限制在安全范围内。"""
+    try:
+        value = float(scale)
+    except (TypeError, ValueError):
+        value = 1.0
+    if not math.isfinite(value):
+        value = 1.0
+    return max(MIN_SCALE, min(MAX_SCALE, value))
+
+
+def scale_for_size(size_key):
+    """旧版 small/medium/large 大小键转换为相对默认大小的比例。"""
+    return clamp_scale(SCALE_PRESETS.get(size_key, SCALE_PRESETS['medium']))
+
+
+def scale_from_pet(pet):
+    """读取宠物大小；优先使用精确比例，兼容旧版 size 字段。"""
+    if isinstance(pet, dict) and 'scale' in pet:
+        return clamp_scale(pet.get('scale'))
+    if isinstance(pet, dict):
+        return scale_for_size(pet.get('size', 'medium'))
+    return 1.0
+
+
+def size_key_for_scale(scale):
+    """为精确比例保留一个兼容用的最近预设名称。"""
+    value = clamp_scale(scale)
+    return min(SCALE_PRESETS,
+               key=lambda key: abs(SCALE_PRESETS[key] - value))
+
+
+def is_preset_scale(scale, size_key):
+    """判断精确比例是否对应某个快捷预设。"""
+    return math.isclose(clamp_scale(scale), scale_for_size(size_key),
+                        rel_tol=0.0, abs_tol=SCALE_STEP / 2)
 
 
 def save(cfg):

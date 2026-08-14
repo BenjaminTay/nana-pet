@@ -4,11 +4,23 @@ import os
 
 from qtcompat import (IS_MAC, QIcon, QKeySequence, QDialog,
                       QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-                      QKeySequenceEdit)
+                      QKeySequenceEdit, QMessageBox)
 import config
 from nana.hotkeys import ACTIONS
 
 ICON_FILE = 'icon.png' if IS_MAC else 'icon.ico'
+
+
+def find_duplicate_hotkeys(values):
+    """返回重复快捷键描述，供界面提示和测试复用。"""
+    labels = dict(ACTIONS)
+    used = {}
+    for key, sequence in values.items():
+        if sequence:
+            used.setdefault(sequence, []).append(labels.get(key, key))
+    return [f'{sequence}：{", ".join(names)}'
+            for sequence, names in used.items() if len(names) > 1]
+
 
 class SettingsDialog(QDialog):
     """设置：所有功能自定义全局快捷键"""
@@ -45,13 +57,25 @@ class SettingsDialog(QDialog):
         btns.addWidget(btn_cancel)
         layout.addLayout(btns)
         btn_restore.clicked.connect(self._restore)
-        btn_save.clicked.connect(self.accept)
+        btn_save.clicked.connect(self._accept_if_valid)
         btn_cancel.clicked.connect(self.reject)
 
     def _restore(self):
         defaults = config.DEFAULT_CONFIG['hotkeys']
         for key, edit in self.edits.items():
             edit.setKeySequence(QKeySequence(defaults.get(key, '')))
+
+    def _accept_if_valid(self):
+        duplicates = find_duplicate_hotkeys(self.values())
+        if duplicates:
+            QMessageBox.warning(
+                self,
+                '快捷键冲突',
+                '以下快捷键被多个功能使用，请修改后再保存：\n'
+                + '\n'.join(duplicates),
+            )
+            return
+        self.accept()
 
     def values(self):
         return {key: edit.keySequence().toString() for key, edit in self.edits.items()}

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""PetApp 级离屏验证：穿透配置重启恢复/隐藏态新增宠物/复位错开/说话开关藏气泡"""
+"""PetApp 级离屏验证：穿透/隐藏/复位/气泡/最后一只移除。"""
 import os
 import sys
 
@@ -71,11 +71,40 @@ results['through_off_bubble'] = not bool(
 
 owner2.on_exit()
 
-# 清理测试痕迹（不影响真实启动）
+# 6) 最后一只宠物可移除，程序继续运行并可从托盘重新添加
 cfg3 = config.load()
 cfg3['pets'] = []
 cfg3['click_through'] = False
 config.save(cfg3)
+owner3 = main_mod.PetApp(app)
+first_pet_id = next(iter(owner3.pets))
+owner3._add_new()
+owner3.remove_pet(first_pet_id)
+results['remove_one_of_many_keeps_other'] = len(owner3.pets) == 1
+last_pet_id = next(iter(owner3.pets))
+owner3.remove_pet(last_pet_id)
+results['remove_last_pet_keeps_app'] = (
+    not owner3.pets and not owner3._exiting)
+results['empty_menu_state'] = (
+    owner3.act_no_pets.isVisible()
+    and not owner3.act_show_all.isEnabled()
+    and not owner3.size_menu.isEnabled()
+)
+owner3._add_new()
+results['add_after_empty'] = len(owner3.pets) == 1
+owner3.remove_pet(next(iter(owner3.pets)))
+owner3.on_exit()
+
+# 7) 重启时没有宠物 → 按产品约定自动创建一只默认宠物
+owner4 = main_mod.PetApp(app)
+results['restart_empty_creates_default'] = len(owner4.pets) == 1
+owner4.on_exit()
+
+# 清理测试痕迹（不影响真实启动）
+cfg4 = config.load()
+cfg4['pets'] = []
+cfg4['click_through'] = False
+config.save(cfg4)
 
 ok = all(results.values())
 for k in sorted(results):

@@ -9,11 +9,13 @@ from qtcompat import (IS_WIN, Qt, QTimer, QRectF, QPoint, QPixmap, QAction,
                       QTransform, QPainter, QPainterPath,
                       QColor, QPen, QFont, QFontMetrics, QWidget, QLabel,
                       QMenu, WT, WA, MOUSE_BTN, global_pos, RENDER_AA, PEN_NOPEN,
-                      ALIGN_HC, ASPECT_KEEP, TRANS_SMOOTH, FONT_UI)
+                      ALIGN_HC, ASPECT_KEEP, TRANS_SMOOTH, FONT_UI, MODS,
+                      DIALOG_ACCEPTED)
 
-from config import SIZE_FACTOR
+import config
 from mac_native import apply_window_level, show_and_front
 from nana.bubble import Bubble
+from nana.size_dialog import SizeDialog
 from nana.pet_data import (
     ASSETS,
     CLICK_BAG,
@@ -31,12 +33,14 @@ from nana.pet_data import (
 class PetWindow(QWidget):
     """一只娜娜小狗 = 一个透明窗口 + 独立AI + 情绪语录"""
 
-    def __init__(self, pet_id, cfg, last_fed=None, on_remove=None, on_exit=None):
+    def __init__(self, pet_id, cfg, last_fed=None, on_remove=None,
+                 on_exit=None, on_state_changed=None):
         super().__init__()
         self.pet_id = pet_id
         self.cfg = cfg
         self.on_remove = on_remove
         self.on_exit = on_exit
+        self.on_state_changed = on_state_changed
 
         flags = (WT.FramelessWindowHint | WT.Tool)
         if self.cfg.get('always_on_top', True):
@@ -53,6 +57,7 @@ class PetWindow(QWidget):
 
         self.frames = {}
         self.load_frames()
+        self._scaled_frame_cache = {}
 
         # 状态
         self.state = PetState.IDLE
@@ -60,7 +65,8 @@ class PetWindow(QWidget):
         self.loops_left = 0
         self.facing = 1               # 1=朝右 -1=朝左
         self.size_key = 'medium'
-        self.factor = SIZE_FACTOR['medium']
+        self.scale = 1.0              # 相对默认大小（中等大小）的比例
+        self.factor = config.BASE_SIZE_FACTOR
         self.last_fed = last_fed if last_fed else time.time()
 
         # 物理
@@ -105,7 +111,7 @@ class PetWindow(QWidget):
         self.ai_timer.setSingleShot(True)
         self.ai_timer.timeout.connect(self.ai_decide)
 
-        self.set_size(self.size_key)
+        self.set_scale(self.scale, notify=False)
         self.set_state(PetState.IDLE)
         self.schedule_ai()
         self.tick_timer.start(16)
@@ -137,12 +143,17 @@ class PetWindow(QWidget):
         if not frames:
             return
         self.frame_idx %= len(frames)
-        pm = frames[self.frame_idx]
-        if self.facing < 0:
-            pm = pm.transformed(QTransform().scale(-1, 1))
-        pm = pm.scaled(int(pm.width() * self.factor), int(pm.height() * self.factor),
-                       ASPECT_KEEP,
-                       TRANS_SMOOTH)
+        cache_key = (self.state.value, self.frame_idx, self.facing,
+                     round(self.factor, 4))
+        pm = self._scaled_frame_cache.get(cache_key)
+        if pm is None:
+            pm = frames[self.frame_idx]
+            if self.facing < 0:
+                pm = pm.transformed(QTransform().scale(-1, 1))
+            pm = pm.scaled(int(pm.width() * self.factor),
+                           int(pm.height() * self.factor),
+                           ASPECT_KEEP, TRANS_SMOOTH)
+            self._scaled_frame_cache[cache_key] = pm
         self.label.setPixmap(pm)
         self.label.resize(pm.size())
         self.resize(pm.size())
@@ -416,6 +427,7 @@ class PetWindow(QWidget):
             y = max(screen.top(), min(self.y(), screen.bottom() - self.height()))
             self.move(x, y)
             self.ground_y = y
+            self._state_changed()
             return
         # 连点时间戳立即记录（快速连点不能被延迟合并）；说话延迟250ms，
         # 若期间发生双击则取消，避免双击连弹3条
@@ -504,9 +516,13 @@ class PetWindow(QWidget):
         size_menu = menu.addMenu('大小')
         for key, name in [('small', '小'), ('medium', '中'), ('large', '大')]:
             act = QAction(name, size_menu, checkable=True,
-                          checked=(self.size_key == key))
+                          checked=config.is_preset_scale(self.scale, key))
             act.triggered.connect(lambda _=False, k=key: self.set_size(k))
             size_menu.addAction(act)
+        size_menu.addSeparator()
+        size_menu.addAction(f'当前大小：{round(self.scale * 100)}%',
+                            lambda: None).setEnabled(False)
+        size_menu.addAction('自定义大小…', self.open_size_dialog)
         menu.addSeparator()
         menu.addAction('❌ 移除这一只', lambda: self._safe(self.on_remove, self.pet_id))
         menu.addAction('🚪 退出程序', lambda: self._safe(self.on_exit))
@@ -541,13 +557,63 @@ class PetWindow(QWidget):
 
     # ---------------- 大小 / 置顶 ----------------
     def set_size(self, key):
-        self.size_key = key
-        self.factor = SIZE_FACTOR[key]
+        self.set_scale(config.scale_for_size(key))
+
+    def set_scale(self, scale, notify=True):
+        """设置精确比例，保持宠物脚部锚点并同步气泡位置。"""
+        scale = config.clamp_scale(scale)
+        old_width = max(self.width(), 1)
+        old_height = max(self.height(), 1)
+        old_center_x = self.x() + old_width / 2
+        old_bottom_y = self.y() + old_height
+        old_ground_bottom = self.ground_y + old_height
+
+        self.scale = scale
+        self.factor = config.BASE_SIZE_FACTOR * scale
+        self.size_key = config.size_key_for_scale(scale)
+        self._scaled_frame_cache.clear()
         self.set_frame()
-        # 变大后可能超出屏幕，钳制回所在屏幕可视区（多显示器）
+
+        x = round(old_center_x - self.width() / 2)
+        y = round(old_bottom_y - self.height())
         screen = self.current_screen_geometry()
-        self.move(max(screen.left(), min(self.x(), screen.right() - self.width())),
-                  max(screen.top(), min(self.y(), screen.bottom() - self.height())))
+        x = max(screen.left(), min(x, screen.right() - self.width()))
+        y = max(screen.top(), min(y, screen.bottom() - self.height()))
+        self.move(x, y)
+        self.ground_y = max(screen.top(), min(
+            round(old_ground_bottom - self.height()),
+            screen.bottom() - self.height()))
+        self.update_bubble_pos()
+        if notify:
+            self._state_changed()
+
+    def open_size_dialog(self):
+        original_scale = self.scale
+        dialog = SizeDialog(
+            self.scale,
+            on_preview=lambda scale: self.set_scale(scale, notify=False),
+            parent=self,
+        )
+        dialog.place_beside(self)
+        if dialog.exec() == DIALOG_ACCEPTED:
+            self.set_scale(dialog.scale())
+        else:
+            self.set_scale(original_scale, notify=False)
+
+    def wheelEvent(self, e):
+        """Option/Alt + 滚轮缩放，避免普通滚轮误触。"""
+        if e.modifiers() & MODS.AltModifier:
+            delta = e.angleDelta().y()
+            if delta:
+                direction = 1 if delta > 0 else -1
+                self.set_scale(self.scale + direction * config.SCALE_STEP)
+                e.accept()
+                return
+        e.ignore()
+
+    def _state_changed(self):
+        if self.on_state_changed:
+            self.on_state_changed()
 
     def set_always_on_top(self, enabled, force_front=False):
         self.setWindowFlag(WT.WindowStaysOnTopHint, enabled)

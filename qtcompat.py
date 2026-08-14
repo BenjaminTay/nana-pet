@@ -21,7 +21,8 @@ try:
                                QFontMetrics, QIcon, QKeySequence, QMouseEvent)
     from PySide6.QtWidgets import (QWidget, QLabel, QMenu, QApplication,
                                    QSystemTrayIcon, QDialog, QVBoxLayout,
-                                   QHBoxLayout, QPushButton, QKeySequenceEdit)
+                                   QHBoxLayout, QPushButton, QSlider,
+                                   QKeySequenceEdit, QMessageBox)
     QT6 = True
 except ImportError:                          # 兼容版：PySide2 5.15（Win7/8）
     from PySide2.QtCore import (Qt, QTimer, QRectF, QPoint, QPointF, QEvent,
@@ -32,7 +33,7 @@ except ImportError:                          # 兼容版：PySide2 5.15（Win7/8
     from PySide2.QtWidgets import (QAction, QWidget, QLabel, QMenu,
                                    QApplication, QSystemTrayIcon, QDialog,
                                    QVBoxLayout, QHBoxLayout, QPushButton,
-                                   QKeySequenceEdit)
+                                   QSlider, QKeySequenceEdit, QMessageBox)
     QT6 = False
 
 # ---- Qt5/Qt6 命名差异（Qt6 用作用域枚举，Qt5 直接挂在 Qt/QEvent/QDialog 上）----
@@ -54,6 +55,7 @@ ASPECT_KEEP = (Qt.AspectRatioMode.KeepAspectRatio
 TRANS_SMOOTH = (Qt.TransformationMode.SmoothTransformation
                 if QT6 else Qt.SmoothTransformation)
 FONT_UI = 'PingFang SC' if IS_MAC else 'Microsoft YaHei'   # 跨平台中文字体
+HORIZONTAL = (Qt.Orientation.Horizontal if QT6 else Qt.Horizontal)
 
 
 def global_pos(e):

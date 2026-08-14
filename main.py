@@ -12,6 +12,7 @@ from qtcompat import (IS_MAC, QTimer, QPoint, QIcon, QAction, QGuiApplication,
 import config
 from nana.hotkeys import GlobalHotkeys
 from nana.settings_dialog import SettingsDialog
+from nana.size_dialog import SizeDialog
 from pet import (PetWindow, PetState, hourly_egg_for, screen_geometry_for,
                  emotion_state)
 
@@ -32,6 +33,12 @@ class PetApp:
         self.pets = {}
         self._exiting = False
         self._hotkey_status = '快捷键：初始化中'
+
+        # 位置/大小等交互状态采用短暂防抖保存，避免连续滚轮缩放频繁写文件。
+        self.save_debounce = QTimer()
+        self.save_debounce.setSingleShot(True)
+        self.save_debounce.setInterval(500)
+        self.save_debounce.timeout.connect(self.save_state)
 
         # 全局快捷键
         self.hotkeys = GlobalHotkeys(self)
@@ -97,11 +104,10 @@ class PetApp:
             self.cfg['next_id'] += 1
         last_fed = saved.get('last_fed') if saved else None
         pet = PetWindow(pet_id, self.cfg, last_fed=last_fed,
-                        on_remove=self.remove_pet, on_exit=self.on_exit)
+                        on_remove=self.remove_pet, on_exit=self.on_exit,
+                        on_state_changed=self.request_save)
         if saved:
-            pet.size_key = saved.get('size', 'medium')
-            pet.factor = config.SIZE_FACTOR[pet.size_key]
-            pet.set_frame()
+            pet.set_scale(config.scale_from_pet(saved), notify=False)
             # 多显示器：按存档坐标所在屏幕钳制，宠物留在原显示器
             screen = screen_geometry_for(
                 QPoint(saved.get('x', 100) + pet.width() // 2,
@@ -123,6 +129,8 @@ class PetApp:
         if self.act_hide.isChecked():
             pet.set_hidden(True)
         self.pets[pet_id] = pet
+        self._update_pet_menu_state()
+        self.request_save()
         logging.info(f'添加宠物 #{pet_id}')
         return pet
 
@@ -131,9 +139,12 @@ class PetApp:
         if pet:
             pet.close()
             pet.deleteLater()
+            self.request_save()
             logging.info(f'移除宠物 #{pet_id}')
         if not self.pets:
-            self.add_pet(None)
+            # 允许暂时没有宠物；程序继续驻留菜单栏，可通过“添加一只”恢复。
+            logging.info('当前没有宠物，程序继续驻留菜单栏')
+        self._update_pet_menu_state()
 
     def all_dance(self):
         for pet in self.pets.values():
@@ -160,22 +171,28 @@ class PetApp:
                 y = g.bottom() - pet.height() - 10
                 pet.move(max(g.left() + 10, x), y)
                 pet.ground_y = y
+        self.request_save()
         logging.info('复位位置')
 
     # ---------------- 托盘 ----------------
     def build_tray_menu(self):
         menu = QMenu()
-        menu.addAction('👀 显示/恢复全部宠物', self.show_all)
-        menu.addAction('🐱 添加一只', self._add_new)
-        menu.addAction('💃 全部跳舞', self.all_dance)
-        menu.addAction('🍖 全部喂狗粮', self.feed_all)
-        menu.addAction('🏠 复位位置', self.reset_positions)
+        self.act_no_pets = QAction('ℹ️ 当前没有宠物（可添加一只）', menu)
+        self.act_no_pets.setEnabled(False)
+        menu.addAction(self.act_no_pets)
+        self.act_show_all = menu.addAction('👀 显示/恢复全部宠物', self.show_all)
+        self.act_add = menu.addAction('🐱 添加一只', self._add_new)
+        self.act_all_dance = menu.addAction('💃 全部跳舞', self.all_dance)
+        self.act_feed_all = menu.addAction('🍖 全部喂狗粮', self.feed_all)
+        self.act_reset = menu.addAction('🏠 复位位置', self.reset_positions)
         menu.addSeparator()
-        size_menu = menu.addMenu('大小（全部）')
+        self.size_menu = menu.addMenu('大小（全部）')
         for key, name in [('small', '小'), ('medium', '中'), ('large', '大')]:
-            act = QAction(name, size_menu)
+            act = QAction(name, self.size_menu)
             act.triggered.connect(lambda _=False, k=key: self._set_all_size(k))
-            size_menu.addAction(act)
+            self.size_menu.addAction(act)
+        self.size_menu.addAction('自定义大小…', self._set_all_custom_size)
+        self.size_menu.addAction('恢复默认大小', lambda: self._set_all_scale(1.0))
         menu.addAction(self.act_speech)
         menu.addAction(self.act_top)
         menu.addAction(self.act_through)
@@ -188,6 +205,20 @@ class PetApp:
         menu.addAction('🚪 退出', self.on_exit)
         self.tray.setContextMenu(menu)
         self.tray.show()
+        self._update_pet_menu_state()
+
+    def _update_pet_menu_state(self):
+        """根据当前宠物数量更新托盘菜单，避免 0 只时出现无效操作。"""
+        if not hasattr(self, 'act_no_pets'):
+            return
+        has_pets = bool(self.pets)
+        self.act_no_pets.setVisible(not has_pets)
+        self.act_show_all.setEnabled(has_pets)
+        self.act_all_dance.setEnabled(has_pets)
+        self.act_feed_all.setEnabled(has_pets)
+        self.act_reset.setEnabled(has_pets)
+        self.size_menu.setEnabled(has_pets)
+        self.act_hide.setEnabled(has_pets)
 
     def _add_new(self):
         pet = self.add_pet(None)
@@ -196,6 +227,9 @@ class PetApp:
 
     def show_all(self):
         """清除隐藏状态，并将全部宠物恢复到当前可见浮动层。"""
+        if not self.pets:
+            logging.info('当前没有宠物，跳过显示/恢复')
+            return
         if self.act_hide.isChecked():
             self.act_hide.setChecked(False)
         else:
@@ -207,16 +241,45 @@ class PetApp:
         for pet in self.pets.values():
             pet.set_size(key)
 
+    def _set_all_scale(self, scale):
+        for pet in self.pets.values():
+            pet.set_scale(scale)
+        self.request_save()
+
+    def _set_all_custom_size(self):
+        original_scales = {pet_id: pet.scale
+                           for pet_id, pet in self.pets.items()}
+        current = next(iter(self.pets.values()), None)
+        dialog = SizeDialog(
+            current.scale if current else 1.0,
+            on_preview=lambda scale: self._preview_all_scale(scale),
+        )
+        if current:
+            dialog.place_beside(current)
+        if dialog.exec() == DIALOG_ACCEPTED:
+            self._set_all_scale(dialog.scale())
+        else:
+            for pet_id, scale in original_scales.items():
+                pet = self.pets.get(pet_id)
+                if pet:
+                    pet.set_scale(scale, notify=False)
+
+    def _preview_all_scale(self, scale):
+        for pet in self.pets.values():
+            pet.set_scale(scale, notify=False)
+
     def _on_speech(self, enabled):
         self.cfg['speech'] = enabled
         if not enabled:          # 关掉说话的瞬间把当前气泡也藏起来
             for pet in self.pets.values():
                 pet.hide_bubble()
+        self.request_save()
 
     def _on_always_on_top(self, enabled):
         self.cfg['always_on_top'] = enabled
         for pet in self.pets.values():
             pet.set_always_on_top(enabled, force_front=enabled)
+        self.request_save()
 
     def _on_click_through(self, enabled):
         self.cfg['click_through'] = enabled
@@ -225,9 +288,11 @@ class PetApp:
         if enabled:
             for pet in self.pets.values():
                 pet.hide_bubble()
+        self.request_save()
 
     def _on_autostart(self, enabled):
         config.set_autostart(enabled)
+        self.request_save()
 
     def _on_hide(self, hidden):
         """隐藏全部宠物：窗口+气泡全藏，且禁言（不说话）"""
@@ -236,6 +301,7 @@ class PetApp:
         if not hidden:
             for pet in self.pets.values():
                 pet.show_and_front()
+        self.request_save()
         logging.info('隐藏状态: %s', hidden)
 
     def on_hotkey_status(self, status):
@@ -295,9 +361,14 @@ class PetApp:
         logging.info(f'整点彩蛋: {text}')
 
     # ---------------- 状态保存 ----------------
+    def request_save(self):
+        if not self._exiting:
+            self.save_debounce.start()
+
     def save_state(self):
         self.cfg['pets'] = [
             {'id': pid, 'x': pet.x(), 'y': pet.y(), 'size': pet.size_key,
+             'scale': pet.scale,
              'last_fed': pet.last_fed}
             for pid, pet in self.pets.items()
         ]

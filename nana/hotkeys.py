@@ -89,13 +89,25 @@ class GlobalHotkeys(QAbstractNativeEventFilter):
             return
         if not IS_WIN:
             return
+        failed = []
         for i, (action, seq) in enumerate(mapping.items(), start=1):
             vk, mods = seq_to_vkmods(seq)
             if not vk or not mods:
+                if seq:
+                    failed.append(action)
                 continue
             if self._user32.RegisterHotKey(None, i, mods, vk):
                 self._ids[i] = action
-        logging.info(f'全局快捷键注册: {list(self._ids.values())}')
+            else:
+                failed.append(action)
+        if failed:
+            self.owner.on_hotkey_status(
+                f'部分快捷键注册失败：{", ".join(failed)}')
+        else:
+            self.owner.on_hotkey_status(
+                f'已注册 {len(self._ids)} 组快捷键')
+        logging.info('全局快捷键注册: %s，失败: %s',
+                     list(self._ids.values()), failed)
 
     def unregister_all(self):
         if IS_MAC:
