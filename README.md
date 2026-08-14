@@ -79,6 +79,12 @@ macOS 菜单栏中新增“显示/恢复全部宠物”，用于宠物被隐藏�
 证书与 notarization。正式面向其他用户发布前，还需要使用 Developer ID Application
 签名并完成公证，否则 Gatekeeper 可能提示“无法验证开发者”。
 
+## GitHub Actions 自动构建
+
+- `CI` 工作流在 Ubuntu、macOS 和 Windows 上运行跨平台测试；Windows 额外运行真实窗口层级测试。
+- `Build packages` 工作流在手动触发或推送 `v*` 标签时构建 macOS arm64 DMG 和 Windows 安装包，产物保存在 Actions Artifacts 中。
+- 当前工作流只负责构建，不负责 Apple Developer 签名、公证或自动发布 GitHub Release。
+
 ## 测试
 
 测试包括离屏交互、macOS 快捷键映射和 Windows 真实窗口层级测试：
@@ -95,8 +101,10 @@ python tests/test_zorder.py
 
 ```
 nana-pet/
+├── .github/workflows/    # CI 测试和跨平台构建
 ├── main.py              # 入口：托盘 + 多宠物管理 + 每日问候 + 全局快捷键
-├── pet.py               # 宠物窗口：状态机、气泡、拖拽、动画、物理
+├── pet.py               # 兼容入口：导出 PetWindow 与宠物公共 API
+├── nana/                 # 宠物数据、气泡、快捷键和设置模块
 ├── mac_native.py        # macOS NSWindow 层级与 Quartz 全局快捷键
 ├── config.py            # 配置读写、开机自启（Windows 注册表 / macOS LaunchAgent）
 ├── qtcompat.py          # Qt 版本兼容层（enum 命名差异、事件构造）
