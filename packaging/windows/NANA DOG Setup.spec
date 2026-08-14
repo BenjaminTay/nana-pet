@@ -1,11 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+
+SPEC_DIR = os.path.abspath(SPECPATH)
+PROJECT_ROOT = os.path.abspath(os.path.join(SPEC_DIR, '..', '..'))
 
 a = Analysis(
-    ['main.py'],
-    pathex=[],
+    [os.path.join(SPEC_DIR, 'installer.py')],
+    pathex=[PROJECT_ROOT],
     binaries=[],
-    datas=[('assets', 'assets')],
+    datas=[(os.path.join(PROJECT_ROOT, 'dist', 'NANA DOG'), 'NanaDog')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -19,27 +23,21 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
-    exclude_binaries=True,
-    name='NANA DOG',
+    name='NANA DOG Setup',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['assets/icon.ico'],
-)
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='NANA DOG',
+    icon=[os.path.join(PROJECT_ROOT, 'assets', 'icon.ico')],
 )

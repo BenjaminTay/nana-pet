@@ -12,7 +12,8 @@ from PIL import Image
 
 from gen_assets_nana import build_icon_canvas, load_master, write_ico
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE = PROJECT_ROOT
 ASSETS = os.path.join(BASE, 'assets')
 SIZES = (16, 24, 32, 48, 64, 128, 256)
 

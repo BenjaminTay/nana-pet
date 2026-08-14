@@ -58,7 +58,9 @@ def is_running(exe_name):
 
 
 def resource_dir():
-    return getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))))
+    return getattr(sys, '_MEIPASS', project_root)
 
 
 def msg(title, text, icon=0x40):

@@ -12,7 +12,8 @@ import struct
 
 from PIL import Image, ImageDraw, ImageFont
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE = PROJECT_ROOT
 _WINDOWS_SRC = r'C:\Users\Administrator\Desktop\nana\白底图.png'
 SRC = os.environ.get(
     'NANA_MASTER_IMAGE',

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$PROJECT_ROOT"
 
 if [[ -n "${PYTHON:-}" ]]; then
   : # 使用调用方显式指定的解释器。
@@ -12,14 +14,14 @@ else
 fi
 
 if [[ ! -f assets/icon.icns ]]; then
-  echo "缺少 assets/icon.icns，先执行：$PYTHON gen_icon.py"
+  echo "缺少 assets/icon.icns，先执行：$PYTHON tools/gen_icon.py"
   exit 1
 fi
 
 "$PYTHON" -m PyInstaller \
   --clean \
   --noconfirm \
-  nana_dog_mac.spec
+  packaging/macos/nana_dog_mac.spec
 
 echo "构建完成：dist/NANA DOG.app"
 echo "启动命令：open 'dist/NANA DOG.app'"

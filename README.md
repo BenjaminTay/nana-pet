@@ -32,15 +32,15 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
-Windows 也可以直接双击 `run.bat`。macOS 下不要运行 `run.bat`，使用上面的命令即可。
+Windows 也可以直接双击 `scripts/run.bat`。macOS 下不要运行这个 bat 脚本，使用上面的命令即可。
 
 ## 打包安装包
 
-双击 `build_standard.bat`（或手动执行）：
+双击 `packaging/windows/build_standard.bat`（或手动执行）：
 
 ```bat
-py -3.12 -m PyInstaller "NANA DOG.spec" --noconfirm          :: ① 程序本体（onedir）
-py -3.12 -m PyInstaller "NANA DOG Setup.spec" --noconfirm    :: ② 安装程序（onefile，内嵌本体）
+py -3.12 -m PyInstaller "packaging\windows\NANA DOG.spec" --noconfirm
+py -3.12 -m PyInstaller "packaging\windows\NANA DOG Setup.spec" --noconfirm
 ```
 
 安装程序输出到 `dist\NANA DOG Setup.exe`，脚本会自动复制到桌面。
@@ -48,23 +48,23 @@ py -3.12 -m PyInstaller "NANA DOG Setup.spec" --noconfirm    :: ② 安装程序
 
 ## macOS 打包
 
-在 macOS 上单独构建 `.app`，不要使用 Windows 的 `build_standard.bat` 或 `NANA DOG Setup.spec`：
+在 macOS 上单独构建 `.app`，不要使用 Windows 的构建脚本或 spec：
 
 ```bash
 python3.12 -m venv .venv-mac
 .venv-mac/bin/python -m pip install -r requirements.txt
-.venv-mac/bin/python gen_icon.py
-./build_mac.sh
+.venv-mac/bin/python tools/gen_icon.py
+./packaging/macos/build_mac.sh
 open "dist/NANA DOG.app"
 ```
 
 构建产物为 `dist/NANA DOG.app`。如果系统提示缺少执行权限，先运行：
 
 ```bash
-chmod +x build_mac.sh
+chmod +x packaging/macos/build_mac.sh
 ```
 
-macOS 版使用 `nana_dog_mac.spec`，运行数据保存在
+macOS 版使用 `packaging/macos/nana_dog_mac.spec`，运行数据保存在
 `~/Library/Application Support/NanaDog/`。macOS 使用 Quartz 全局键盘监听；首次使用需要在“系统设置 → 隐私与安全性 → 辅助功能/输入监控”中允许 NANA DOG。
 
 macOS 菜单栏中新增“显示/恢复全部宠物”，用于宠物被隐藏或窗口暂时不可见时主动恢复。置顶状态通过 macOS 原生 `NSWindow` 浮动层同步到宠物和气泡窗口，并支持跨 Space 显示。
@@ -76,11 +76,11 @@ macOS 菜单栏中新增“显示/恢复全部宠物”，用于宠物被隐藏�
 测试包括离屏交互、macOS 快捷键映射和 Windows 真实窗口层级测试：
 
 ```bash
-python test_enhance.py
-python test_main.py
-python test_mac.py
-python test_top.py
-python test_zorder.py
+python tests/test_enhance.py
+python tests/test_main.py
+python tests/test_mac.py
+python tests/test_top.py
+python tests/test_zorder.py
 ```
 
 ## 目录结构
@@ -92,18 +92,12 @@ nana-pet/
 ├── mac_native.py        # macOS NSWindow 层级与 Quartz 全局快捷键
 ├── config.py            # 配置读写、开机自启（Windows 注册表 / macOS LaunchAgent）
 ├── qtcompat.py          # Qt 版本兼容层（enum 命名差异、事件构造）
-├── installer.py         # 安装程序逻辑（解包安装、进程检测、失败提示）
-├── gen_assets_nana.py   # 素材生成器：原始图 → 全套动画帧 + 图标
-├── gen_icon.py          # 单独重新生成 icon.ico / icon.png / macOS icon.icns
 ├── assets/              # 运行时素材：15 个状态帧目录 + head.json + quotes.txt + 图标
 ├── assets_raw/          # 原始素材图（生成 assets 的输入）
-├── test_*.py            # 五套自动化测试
-├── NANA DOG.spec        # PyInstaller 配置：程序本体
-├── NANA DOG Setup.spec  # PyInstaller 配置：安装程序
-├── nana_dog_mac.spec    # PyInstaller 配置：macOS .app
-├── build_standard.bat   # 一键打包脚本
-├── build_mac.sh         # macOS .app 打包脚本
-└── run.bat              # 源码运行脚本
+├── tests/               # 五套自动化测试
+├── tools/               # 素材帧和图标生成工具
+├── packaging/           # Windows / macOS 打包配置与脚本
+└── scripts/             # 日常运行脚本
 ```
 
 ## 数据与配置
@@ -118,13 +112,13 @@ nana-pet/
 
 ## 素材再生成
 
-- 全套动画帧 + 图标：`python gen_assets_nana.py`（读取 `assets_raw/` 与 `head.json`）
-- 仅图标：`python gen_icon.py`（输出 `icon.ico`、`icon.png`；macOS 额外输出 `icon.icns`）
+- 全套动画帧 + 图标：`python tools/gen_assets_nana.py`（读取 `assets_raw/` 与 `assets/head.json`）
+- 仅图标：`python tools/gen_icon.py`（输出 `assets/icon.ico`、`assets/icon.png`；macOS 额外输出 `assets/icon.icns`）
 
 素材生成器支持通过 `NANA_MASTER_IMAGE` 指定原始素材路径，避免依赖 Windows 固定路径：
 
 ```bash
-NANA_MASTER_IMAGE=/absolute/path/to/source.png python gen_assets_nana.py
+NANA_MASTER_IMAGE=/absolute/path/to/source.png python tools/gen_assets_nana.py
 ```
 
 ## 开源协议

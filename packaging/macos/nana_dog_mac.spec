@@ -2,14 +2,19 @@
 """NANA DOG macOS .app bundle.
 
 Build on macOS with:
-    python -m PyInstaller --clean --noconfirm nana_dog_mac.spec
+    python -m PyInstaller --clean --noconfirm packaging/macos/nana_dog_mac.spec
 """
 
+import os
+
+SPEC_DIR = os.path.abspath(SPECPATH)
+PROJECT_ROOT = os.path.abspath(os.path.join(SPEC_DIR, '..', '..'))
+
 a = Analysis(
-    ['main.py'],
-    pathex=[],
+    [os.path.join(PROJECT_ROOT, 'main.py')],
+    pathex=[PROJECT_ROOT],
     binaries=[],
-    datas=[('assets', 'assets')],
+    datas=[(os.path.join(PROJECT_ROOT, 'assets'), 'assets')],
     hiddenimports=['objc', 'AppKit', 'Foundation', 'Quartz'],
     hookspath=[],
     hooksconfig={},
@@ -52,7 +57,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='NANA DOG.app',
-    icon='assets/icon.icns',
+    icon=os.path.join(PROJECT_ROOT, 'assets', 'icon.icns'),
     bundle_identifier='com.szsqq.nanadog',
     version='0.1.0',
     info_plist={

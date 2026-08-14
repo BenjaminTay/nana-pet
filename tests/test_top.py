@@ -8,7 +8,8 @@ if sys.platform != 'win32':
     print('SKIP: test_top.py 仅验证 Windows WS_EX_TOPMOST')
     sys.exit(0)
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_ROOT)
 
 from qtcompat import QApplication
 
