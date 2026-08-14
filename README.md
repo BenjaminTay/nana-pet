@@ -23,6 +23,9 @@
 - Python 3.10+（推荐 3.12）
 - PySide6 ≥ 6.5
 
+运行桌宠安装 `requirements.txt`；打包或重新生成素材时安装
+`requirements-build.txt`。
+
 ## 快速开始（源码运行）
 
 ```bash
@@ -39,6 +42,7 @@ Windows 也可以直接双击 `scripts/run.bat`。macOS 下不要运行这个 ba
 双击 `packaging/windows/build_standard.bat`（或手动执行）：
 
 ```bat
+py -3.12 -m pip install -r requirements-build.txt
 py -3.12 -m PyInstaller "packaging\windows\NANA DOG.spec" --noconfirm
 py -3.12 -m PyInstaller "packaging\windows\NANA DOG Setup.spec" --noconfirm
 ```
@@ -52,7 +56,7 @@ py -3.12 -m PyInstaller "packaging\windows\NANA DOG Setup.spec" --noconfirm
 
 ```bash
 python3.12 -m venv .venv-mac
-.venv-mac/bin/python -m pip install -r requirements.txt
+.venv-mac/bin/python -m pip install -r requirements-build.txt
 .venv-mac/bin/python tools/gen_icon.py
 ./packaging/macos/build_mac.sh
 open "dist/NANA DOG.app"
@@ -70,6 +74,10 @@ macOS 版使用 `packaging/macos/nana_dog_mac.spec`，运行数据保存在
 macOS 菜单栏中新增“显示/恢复全部宠物”，用于宠物被隐藏或窗口暂时不可见时主动恢复。置顶状态通过 macOS 原生 `NSWindow` 浮动层同步到宠物和气泡窗口，并支持跨 Space 显示。
 
 `build_mac.sh` 会同时生成可分享的 `dist/NANA DOG.dmg`，打开后将应用拖入 Applications 即可。
+
+当前 macOS 构建使用 ad-hoc 签名，适合本机验证和技术分享；未配置 Apple Developer
+证书与 notarization。正式面向其他用户发布前，还需要使用 Developer ID Application
+签名并完成公证，否则 Gatekeeper 可能提示“无法验证开发者”。
 
 ## 测试
 
@@ -97,6 +105,9 @@ nana-pet/
 ├── tests/               # 五套自动化测试
 ├── tools/               # 素材帧和图标生成工具
 ├── packaging/           # Windows / macOS 打包配置与脚本
+├── requirements-build.txt # 打包和素材生成依赖
+├── ASSET_LICENSE.md     # 素材与源码许可证边界
+├── CHANGELOG.md         # 版本更新记录
 └── scripts/             # 日常运行脚本
 ```
 
@@ -112,6 +123,8 @@ nana-pet/
 
 ## 素材再生成
 
+素材生成器需要先安装 `requirements-build.txt`。
+
 - 全套动画帧 + 图标：`python tools/gen_assets_nana.py`（读取 `assets_raw/` 与 `assets/head.json`）
 - 仅图标：`python tools/gen_icon.py`（输出 `assets/icon.ico`、`assets/icon.png`；macOS 额外输出 `assets/icon.icns`）
 
@@ -124,6 +137,9 @@ NANA_MASTER_IMAGE=/absolute/path/to/source.png python tools/gen_assets_nana.py
 ## 开源协议
 
 [MIT License](LICENSE) © 2026 三青
+
+素材与语录的发布边界见 [ASSET_LICENSE.md](ASSET_LICENSE.md)，版本变化见
+[CHANGELOG.md](CHANGELOG.md)。
 
 素材（`assets/`、`assets_raw/`）与语录（`assets/quotes.txt`）随仓库一同发布，
 如不希望公开可自行替换为占位素材（替换后运行 `gen_assets_nana.py` 重新生成）。
