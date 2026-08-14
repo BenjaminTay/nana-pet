@@ -9,6 +9,8 @@ import os
 
 SPEC_DIR = os.path.abspath(SPECPATH)
 PROJECT_ROOT = os.path.abspath(os.path.join(SPEC_DIR, '..', '..'))
+with open(os.path.join(PROJECT_ROOT, 'VERSION'), encoding='utf-8') as version_file:
+    APP_VERSION = version_file.read().strip()
 
 a = Analysis(
     [os.path.join(PROJECT_ROOT, 'main.py')],
@@ -59,7 +61,7 @@ app = BUNDLE(
     name='NANA DOG.app',
     icon=os.path.join(PROJECT_ROOT, 'assets', 'icon.icns'),
     bundle_identifier='com.szsqq.nanadog',
-    version='0.1.0',
+    version=APP_VERSION,
     info_plist={
         'CFBundleDisplayName': 'NANA DOG',
         'NSPrincipalClass': 'NSApplication',

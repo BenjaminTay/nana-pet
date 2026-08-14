@@ -82,8 +82,9 @@ macOS 菜单栏中新增“显示/恢复全部宠物”，用于宠物被隐藏�
 ## GitHub Actions 自动构建
 
 - `CI` 工作流在 Ubuntu、macOS 和 Windows 上运行跨平台测试；Windows 额外运行真实窗口层级测试。
-- `Build packages` 工作流在手动触发或推送 `v*` 标签时构建 macOS arm64 DMG 和 Windows 安装包，产物保存在 Actions Artifacts 中。
-- 当前工作流只负责构建，不负责 Apple Developer 签名、公证或自动发布 GitHub Release。
+- `Build packages` 工作流手动触发时只生成 Actions Artifacts；推送 `v*` 标签时会构建并自动创建 GitHub Release。
+- Release 会上传 macOS arm64 DMG、Windows 安装程序、Windows 便携版 ZIP 和 `SHA256SUMS.txt`。
+- 当前工作流不负责 Apple Developer 签名或公证；macOS 包仍可能触发 Gatekeeper 提示。
 
 ## 测试
 
@@ -113,6 +114,7 @@ nana-pet/
 ├── tests/               # 五套自动化测试
 ├── tools/               # 素材帧和图标生成工具
 ├── packaging/           # Windows / macOS 打包配置与脚本
+├── VERSION              # 当前发布版本
 ├── requirements-build.txt # 打包和素材生成依赖
 ├── ASSET_LICENSE.md     # 素材与源码许可证边界
 ├── CHANGELOG.md         # 版本更新记录

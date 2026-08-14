@@ -1,9 +1,10 @@
 # 更新记录
 
-## Unreleased
+## 0.1.1 - 2026-08-14
 
 - 拆分宠物数据、对话气泡、全局快捷键和设置对话框模块，同时保留 `main.py`、`pet.py` 的兼容入口；
-- 增加 GitHub Actions 的跨平台测试、macOS arm64 和 Windows 自动构建工作流。
+- 增加 GitHub Actions 的跨平台测试、macOS arm64 和 Windows 自动构建工作流；
+- 增加推送版本标签后自动创建 GitHub Release 的发布流程。
 
 ## 0.1.0 - 2026-08-14
 
