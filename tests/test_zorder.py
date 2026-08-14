@@ -62,7 +62,7 @@ bubble_idx = idx(int(pet.bubble.winId()))
 other_idx = idx(int(other.winId()))
 pet_idx = idx(int(pet.winId()))
 
-print('bubble_z =', bubble_idx, '(越小越靠前)')
+print('bubble_z =', bubble_idx, '(lower is closer to front)')
 print('other_z  =', other_idx)
 print('pet_z    =', pet_idx)
 ok = bubble_idx > other_idx          # 气泡必须排在"其他应用"后面
