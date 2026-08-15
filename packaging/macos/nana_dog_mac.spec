@@ -69,6 +69,5 @@ app = BUNDLE(
         'LSUIElement': True,
         'NSHighResolutionCapable': True,
         'LSMinimumSystemVersion': '13.0',
-        'NSHumanReadableCopyright': 'Copyright © 2026 三青',
     },
 )
