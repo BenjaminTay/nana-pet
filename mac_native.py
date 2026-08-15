@@ -61,6 +61,13 @@ if IS_MAC:
     except ImportError as exc:  # 打包遗漏 PyObjC 时仍允许程序启动
         logging.warning('macOS 原生适配不可用: %s', exc)
         MAC_NATIVE_AVAILABLE = False
+        # PyObjC 未安装时仍保留纯 Python 的快捷键映射能力。运行时的
+        # CGEventTap 会继续按 MAC_NATIVE_AVAILABLE 正确降级，但测试和
+        # 配置界面不应因为缺少原生桥接而无法解析修饰键。
+        kCGEventFlagMaskAlternate = 1 << 19
+        kCGEventFlagMaskCommand = 1 << 20
+        kCGEventFlagMaskControl = 1 << 18
+        kCGEventFlagMaskShift = 1 << 17
 else:
     MAC_NATIVE_AVAILABLE = False
 

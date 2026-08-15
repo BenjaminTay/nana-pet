@@ -16,6 +16,26 @@ STATES = (
     'idle', 'walk', 'run', 'jump', 'sit', 'sleep', 'dance', 'eat',
     'happy', 'angry', 'sad', 'cry', 'spin', 'sing', 'shy',
 )
+EXPECTED_FRAME_COUNTS = {
+    'idle': 4,
+    'walk': 6,
+    'run': 6,
+    'jump': 4,
+    'sit': 4,
+    'sleep': 4,
+    'dance': 8,
+    'eat': 6,
+    'happy': 4,
+    'angry': 2,
+    'sad': 2,
+    'cry': 2,
+    'spin': 8,
+    'sing': 4,
+    'shy': 4,
+}
+MIN_TOP_MARGIN = 48
+MIN_SIDE_MARGIN = 16
+MIN_BOTTOM_MARGIN = 16
 
 
 def visible_size(path):
@@ -35,7 +55,21 @@ def touches_forbidden_edge(path):
             'top': any(pixels[x, 0] > 0 for x in range(width)),
             'left': any(pixels[0, y] > 0 for y in range(height)),
             'right': any(pixels[width - 1, y] > 0 for y in range(height)),
+            'bottom': any(pixels[x, height - 1] > 0 for x in range(width)),
         }
+
+
+def has_safe_margins(path):
+    with Image.open(path).convert('RGBA') as image:
+        bbox = image.getchannel('A').getbbox()
+        if bbox is None:
+            return False
+        width, height = image.size
+        left, top, right, bottom = bbox
+        return (top >= MIN_TOP_MARGIN
+                and left >= MIN_SIDE_MARGIN
+                and width - right >= MIN_SIDE_MARGIN
+                and height - bottom >= MIN_BOTTOM_MARGIN)
 
 
 def background_edge_leakage(path):
@@ -48,7 +82,9 @@ def background_edge_leakage(path):
         for y in range(height):
             for x in range(width):
                 r, g, b, a = pixels[x, y]
-                if a < 128:
+                # 极低 alpha 的生成器残留已经不可见，允许状态特效保留这些
+                # 轻微抗锯齿像素；真正会形成桌面黑/白边的是较高 alpha 的底色。
+                if a < 16:
                     continue
                 adjacent_to_transparent = any(
                     0 <= nx < width and 0 <= ny < height
@@ -71,16 +107,28 @@ for skin in SKINS:
     idle_width = median([visible_size(path)[0] for path in idle_frames])
     idle_heights = [visible_size(path)[1] for path in idle_frames]
     idle_height = median(idle_heights)
+    idle_bottoms = [visible_size(path)[3] for path in idle_frames]
+    idle_bottom = median(idle_bottoms)
 
     for state in STATES:
         frames = sorted((skin_dir / state).glob('frame_*.png'))
         results[f'{skin}_{state}_has_frames'] = bool(frames)
+        results[f'{skin}_{state}_frame_count_matches_spec'] = (
+            len(frames) == EXPECTED_FRAME_COUNTS[state]
+        )
         results[f'{skin}_{state}_canvas_matches_idle'] = all(
             Image.open(path).size == expected_canvas for path in frames)
         results[f'{skin}_{state}_has_edge_safety_margin'] = all(
             not any(touches_forbidden_edge(path).values()) for path in frames)
+        results[f'{skin}_{state}_has_minimum_margins'] = all(
+            has_safe_margins(path) for path in frames)
         results[f'{skin}_{state}_no_background_edge_leakage'] = all(
             background_edge_leakage(path) <= 64 for path in frames)
+        idle_signatures = {path.read_bytes() for path in idle_frames}
+        results[f'{skin}_{state}_not_idle_fallback'] = (
+            state == 'idle'
+            or any(path.read_bytes() not in idle_signatures for path in frames)
+        )
 
     happy_sizes = [visible_size(path) for path in
                    sorted((skin_dir / 'happy').glob('frame_*.png'))]
@@ -96,7 +144,7 @@ for skin in SKINS:
     )
     results[f'{skin}_happy_baseline_stable'] = (
         len(set(happy_bottoms)) == 1
-        and happy_bottoms[0] == expected_canvas[1]
+        and happy_bottoms[0] == idle_bottom
     )
 
 ok = all(results.values())

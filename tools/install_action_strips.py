@@ -11,6 +11,14 @@ from statistics import median
 
 from PIL import Image
 
+try:
+    from .asset_cleanup import despill_alpha_edges, erode_alpha_boundary
+except ImportError:
+    from asset_cleanup import despill_alpha_edges, erode_alpha_boundary
+
+
+SIDE_MARGIN = 16
+
 
 def is_background_like(rgb):
     r, g, b = rgb
@@ -68,6 +76,7 @@ def infer_reference(reference_dir):
     if not frames:
         raise ValueError(f'参考目录没有 frame_*.png: {reference_dir}')
     heights = []
+    bottom_margins = []
     with Image.open(frames[0]) as image:
         target_size = image.size
     for frame in frames:
@@ -75,9 +84,10 @@ def infer_reference(reference_dir):
             bbox = image.getchannel('A').getbbox()
         if bbox:
             heights.append(bbox[3] - bbox[1])
+            bottom_margins.append(target_size[1] - bbox[3])
     if not heights:
         raise ValueError(f'参考目录没有可见角色: {reference_dir}')
-    return target_size, round(median(heights))
+    return target_size, round(median(heights)), round(median(bottom_margins))
 
 
 def keep_main_components(image, margin=48):
@@ -177,11 +187,14 @@ def remove_edge_fringe(image, passes=3, brightness=195, spread=115):
 
 def install(strip_path, output_dir, frame_count, target_size,
             component_margin=48, reference_dir=None,
-            target_visible_height=None):
+            target_visible_height=None, target_bottom_margin=None):
     if reference_dir is not None:
-        target_size, reference_visible_height = infer_reference(reference_dir)
+        (target_size, reference_visible_height,
+         reference_bottom_margin) = infer_reference(reference_dir)
         if target_visible_height is None:
             target_visible_height = reference_visible_height
+        if target_bottom_margin is None:
+            target_bottom_margin = reference_bottom_margin
     strip = remove_border_background(Image.open(strip_path))
     width, height = strip.size
     panels = []
@@ -190,7 +203,9 @@ def install(strip_path, output_dir, frame_count, target_size,
         x1 = round((index + 1) * width / frame_count)
         panel = strip.crop((x0, 0, x1, height))
         panel = remove_edge_fringe(panel)
+        panel = despill_alpha_edges(panel)
         panel = keep_main_components(panel, margin=component_margin)
+        panel = erode_alpha_boundary(panel, passes=2)
         panel = trim_alpha(panel)
         if panel is None:
             raise ValueError(f'第 {index + 1} 帧为空')
@@ -202,7 +217,7 @@ def install(strip_path, output_dir, frame_count, target_size,
     target_width, target_height = target_size
     height_limit = (target_visible_height
                     if target_visible_height is not None else target_height - 4)
-    scale = min(1.0, (target_width - 4) / max_width,
+    scale = min(1.0, (target_width - SIDE_MARGIN * 2) / max_width,
                 height_limit / max_height)
 
     output_dir = Path(output_dir)
@@ -213,9 +228,10 @@ def install(strip_path, output_dir, frame_count, target_size,
         sprite = panel.resize(size, Image.Resampling.LANCZOS)
         canvas = Image.new('RGBA', target_size, (0, 0, 0, 0))
         x = (target_width - sprite.width) // 2
-        y = target_height - sprite.height
+        y = target_height - (target_bottom_margin or 0) - sprite.height
         canvas.alpha_composite(sprite, (x, y))
-        canvas.save(output_dir / f'frame_{index:03d}.png')
+        despill_alpha_edges(canvas).save(
+            output_dir / f'frame_{index:03d}.png')
 
     return {
         'strip': str(strip_path),
@@ -245,6 +261,9 @@ def main():
     parser.add_argument(
         '--target-visible-height', type=int,
         help='限制动作帧的可见角色高度；不提供时从 --reference-dir 推断')
+    parser.add_argument(
+        '--target-bottom-margin', type=int,
+        help='保留参考帧脚底到画布底部的透明边距；不提供时从 --reference-dir 推断')
     parser.add_argument('--component-margin', type=int, default=48)
     args = parser.parse_args()
     if args.reference_dir is None and (
@@ -256,7 +275,8 @@ def main():
                      target_size,
                      component_margin=args.component_margin,
                      reference_dir=args.reference_dir,
-                     target_visible_height=args.target_visible_height)
+                     target_visible_height=args.target_visible_height,
+                     target_bottom_margin=args.target_bottom_margin)
     print(result)
 
 

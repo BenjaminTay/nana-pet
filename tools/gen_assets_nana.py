@@ -12,6 +12,11 @@ import struct
 
 from PIL import Image, ImageDraw, ImageFont
 
+try:
+    from .asset_cleanup import normalize_runtime_frame
+except ImportError:
+    from asset_cleanup import normalize_runtime_frame
+
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = PROJECT_ROOT
 _WINDOWS_SRC = r'C:\Users\Administrator\Desktop\nana\白底图.png'
@@ -331,7 +336,8 @@ def save_frames(state, frames):
         print(f'{state}: 保留现有动作素材（如需覆盖请设置 NANA_PRESERVE_ACTIONS=0）')
         return
     for i, f in enumerate(frames):
-        f.save(os.path.join(folder, f'frame_{i + 1:03d}.png'))
+        normalize_runtime_frame(f).save(
+            os.path.join(folder, f'frame_{i + 1:03d}.png'))
     print(f'{state}: {len(frames)} 帧')
 
 

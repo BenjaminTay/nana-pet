@@ -106,11 +106,14 @@ python tests/test_zorder.py
 python tests/test_scale.py
 python tests/test_hotkeys.py
 python tests/test_animation_assets.py
+python tests/test_window_edges.py
 ```
 
-其中 `test_animation_assets.py` 会检查 Classic/Q 版全部状态是否使用统一画布、
-是否触碰画布边缘、是否存在明显白底/黑边残留，并额外检查 `happy` 动画的可见
-高度与脚底基线。CI 会在 Ubuntu、macOS 和 Windows 上运行跨平台测试。
+其中 `test_animation_assets.py` 会检查 Classic/Q 版全部状态是否使用规定帧数和统一
+画布、是否触碰画布四周边缘、是否存在半透明黑/白边残留，并确认动作帧没有静默回退成
+`idle`；它还会额外检查 `happy` 动画的可见高度与脚底基线。动作的骨头、心形、音符
+等语义则通过动作联系表和人工接触表验收。CI 会在 Ubuntu、macOS 和 Windows 上
+运行跨平台测试。
 
 ## 目录结构
 
@@ -153,6 +156,7 @@ nana-pet/
 - 全套动画帧 + 图标：`python tools/gen_assets_nana.py`（读取 `assets_raw/` 与 `assets/head.json`）
 - 仅图标：`python tools/gen_icon.py`（优先读取 `design/visual-concepts/round-1/app-icon-v1.png`，输出 `assets/icon.ico`、`assets/icon.png`；macOS 额外输出 `assets/icon.icns`）
 - 动作条拆帧与清理：`python tools/install_action_strips.py --strip <动作条.png> --output-dir <状态目录> --frames <帧数> --reference-dir <对应皮肤>/idle`
+- 修复已有皮肤帧的透明黑边和画布安全区：`python tools/normalize_runtime_assets.py --assets-dir assets/skins --padding-x 16 --top-margin 48 --bottom-margin 16 --min-canvas-height 444`
 
 素材生成器支持通过 `NANA_MASTER_IMAGE` 指定原始素材路径，避免依赖 Windows 固定路径：
 
@@ -174,10 +178,11 @@ NANA_ASSETS_DIR=/absolute/path/to/nana-pet/assets/skins/q \
 python tools/gen_assets_nana.py
 ```
 
-动作优化素材默认不会被全套生成器覆盖；如需明确回退到程序生成的旧版动作，设置 `NANA_PRESERVE_ACTIONS=0`。当前 Classic/Q 版的喂食、跳舞、坐下、睡觉、happy 动作由 `design/visual-concepts/round-1/action-repairs/` 的动作条确定性拆帧安装。安装动作条时应使用对应皮肤的 `idle` 目录作为 `--reference-dir`，让新动作继承同一套画布规格，避免切换时整体缩放。
+动作优化素材默认不会被全套生成器覆盖；如需明确回退到程序生成的旧版动作，设置 `NANA_PRESERVE_ACTIONS=0`。当前 Classic/Q 版的喂食、跳舞、坐下、睡觉、happy，以及本轮修复的 walk、run、angry、sad、cry、spin、sing、shy 动作，均由 `design/visual-concepts/round-1/action-repairs/` 的动作条确定性拆帧安装。安装动作条时应使用对应皮肤的 `idle` 目录作为 `--reference-dir`，让新动作继承同一套画布规格，避免切换时整体缩放。
 
-动作安装器会移除动作条相邻面板残片和透明背景边缘光晕，再以对应皮肤的 idle
-帧统一缩放、脚底对齐并写入透明画布。修改动作条后，应运行
+动作安装器会移除动作条相邻面板残片、透明背景边缘光晕和半透明底色，收紧外轮廓两层
+源像素，再以对应皮肤的 idle 帧统一缩放、脚底对齐，并写入顶部至少 48px、底部 16px、
+左右至少 16px 安全留白的透明画布。修改动作条后，应运行
 `python tests/test_animation_assets.py`，再重新构建 macOS 或 Windows 安装包。
 
 概念素材位于 `design/visual-concepts/round-1/`，当前两套皮肤已经生成并接入运行时；原来的

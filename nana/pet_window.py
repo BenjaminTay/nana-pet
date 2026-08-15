@@ -241,6 +241,18 @@ class PetWindow(QWidget):
         c = QPoint(self.x() + self.width() // 2, self.y() + self.height() // 2)
         return screen_geometry_for(c)
 
+    def clamp_window_position(self, x, y, screen=None):
+        """把整个透明窗口限制在屏幕可用区域内，避免动画/拖拽裁切。"""
+        screen = screen or self.current_screen_geometry()
+        max_x = max(screen.left(),
+                    screen.left() + screen.width() - self.width())
+        max_y = max(screen.top(),
+                    screen.top() + screen.height() - self.height())
+        return (
+            max(screen.left(), min(round(x), max_x)),
+            max(screen.top(), min(round(y), max_y)),
+        )
+
     def update_bubble_pos(self):
         """气泡始终锚定宠物头部上方，越界时翻到下方（朝向翻转时头部镜像）"""
         if not self.bubble.isVisible():
@@ -257,7 +269,9 @@ class PetWindow(QWidget):
         if by < screen.top():
             by = self.y() + self.height() + 2
             self.bubble.tail_bottom = False
-        bx = max(screen.left(), min(bx, screen.right() - self.bubble.width()))
+        max_bx = max(screen.left(),
+                     screen.left() + screen.width() - self.bubble.width())
+        bx = max(screen.left(), min(bx, max_bx))
         self.bubble.move(bx, by)
         self.bubble.update()
 
@@ -306,10 +320,16 @@ class PetWindow(QWidget):
         """散步/奔跑目标：65% 偏好屏幕左右边缘（像趴墙角），其余全屏随机"""
         screen = self.current_screen_geometry()
         margin = 8
+        left = screen.left() + margin
+        right = (screen.left() + screen.width()
+                 - self.width() - margin)
+        if right < left:
+            return screen.left()
         if random.random() < 0.65:
-            return (screen.left() + margin if random.random() < 0.5
-                    else screen.right() - self.width() - margin)
-        return random.randint(screen.left() + 20, screen.right() - self.width() - 20)
+            return left if random.random() < 0.5 else right
+        random_left = screen.left() + min(20, margin)
+        random_right = screen.left() + screen.width() - self.width() - 20
+        return random.randint(random_left, max(random_left, random_right))
 
     def do_action(self, action):
         screen = self.current_screen_geometry()
@@ -355,7 +375,9 @@ class PetWindow(QWidget):
         self.set_state(PetState.WALK if abs(speed) < 4 else PetState.RUN, loops=-1)
 
     def start_jump(self):
-        self.ground_y = self.y()
+        screen = self.current_screen_geometry()
+        _, self.ground_y = self.clamp_window_position(
+            self.x(), self.y(), screen)
         self.vy = -13.0
         self.vx = random.choice([-2.5, -1.0, 0, 1.0, 2.5])
         self.facing = 1 if self.vx >= 0 else -1
@@ -370,23 +392,34 @@ class PetWindow(QWidget):
                 x = self.x() + self.speed
                 if (self.speed > 0 and x >= self.target_x) or \
                    (self.speed < 0 and x <= self.target_x):
-                    self.move(int(self.target_x), self.y())
+                    screen = self.current_screen_geometry()
+                    safe_x, safe_y = self.clamp_window_position(
+                        self.target_x, self.y(), screen)
+                    self.move(safe_x, safe_y)
                     self.target_x = None
                     self.set_state(PetState.IDLE, loops=random.randint(2, 5))
                 else:
-                    self.move(int(x), self.y())
+                    screen = self.current_screen_geometry()
+                    safe_x, safe_y = self.clamp_window_position(
+                        x, self.y(), screen)
+                    self.move(safe_x, safe_y)
         elif s == PetState.JUMP:
             self.vy += 0.9
             x = self.x() + self.vx
             y = self.y() + self.vy
-            if y >= self.ground_y:
-                y = self.ground_y
+            screen = self.current_screen_geometry()
+            _, ground_y = self.clamp_window_position(
+                self.x(), self.ground_y, screen)
+            if y >= ground_y:
+                y = ground_y
                 self.vy = 0
                 self.vx = 0
                 self.set_state(PetState.IDLE, loops=random.randint(1, 3))
-            screen = self.current_screen_geometry()
-            x = max(screen.left(), min(x, screen.right() - self.width()))
-            self.move(int(x), int(y))
+            x, y = self.clamp_window_position(x, y, screen)
+            # 到达屏幕顶部时保留跳跃状态，但不能让窗口继续越界。
+            if y == screen.top() and self.vy < 0:
+                self.vy = 0
+            self.move(x, y)
 
     # ---------------- 鼠标交互 ----------------
     def is_head(self, pos):
@@ -421,7 +454,13 @@ class PetWindow(QWidget):
                 self.hide_bubble()
                 self.say_pool('pickup', chance=0.6)
             if self._picked:
-                self.move(global_pos(e) - self._drag_offset)
+                screen = self.current_screen_geometry()
+                x, y = self.clamp_window_position(
+                    global_pos(e).x() - self._drag_offset.x(),
+                    global_pos(e).y() - self._drag_offset.y(),
+                    screen,
+                )
+                self.move(x, y)
 
     def mouseReleaseEvent(self, e):
         if e.button() != MOUSE_BTN.LeftButton:
@@ -439,8 +478,7 @@ class PetWindow(QWidget):
             return
         if was_picked:
             screen = self.current_screen_geometry()
-            x = max(screen.left(), min(self.x(), screen.right() - self.width()))
-            y = max(screen.top(), min(self.y(), screen.bottom() - self.height()))
+            x, y = self.clamp_window_position(self.x(), self.y(), screen)
             self.move(x, y)
             self.ground_y = y
             self._state_changed()
@@ -612,12 +650,10 @@ class PetWindow(QWidget):
         x = round(old_center_x - self.width() / 2)
         y = round(old_bottom_y - self.height())
         screen = self.current_screen_geometry()
-        x = max(screen.left(), min(x, screen.right() - self.width()))
-        y = max(screen.top(), min(y, screen.bottom() - self.height()))
+        x, y = self.clamp_window_position(x, y, screen)
         self.move(x, y)
-        self.ground_y = max(screen.top(), min(
-            round(old_ground_bottom - self.height()),
-            screen.bottom() - self.height()))
+        _, self.ground_y = self.clamp_window_position(
+            self.x(), old_ground_bottom - self.height(), screen)
         self.update_bubble_pos()
         if notify:
             self._state_changed()
