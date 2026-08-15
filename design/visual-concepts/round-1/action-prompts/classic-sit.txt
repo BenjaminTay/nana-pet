@@ -1,0 +1,8 @@
+Use case: stylized-concept
+Asset type: animated desktop pet sprite strip
+Input image: the provided Classic HD pet master is the canonical identity reference. Preserve the exact dog body, human face, brown cap, curly hair, fur texture, warm palette, proportions, and front-facing character identity.
+Primary request: Create one clean horizontal four-frame animation strip showing a real sit-down action. Frame 1 is standing; frame 2 begins lowering the hindquarters; frame 3 has the rear legs folded and the chest upright; frame 4 is a stable seated pose with a calm smile. The seated pose must clearly place the hindquarters on the ground while the front legs remain naturally supporting the chest.
+Composition/framing: full body in every frame, complete silhouette, same foot/base anchor, generous transparent padding, no body part touching the outer canvas edge.
+Style/medium: polished high-definition mascot illustration matching the reference.
+Constraints: preserve the face, cap and fur identity; show a true anatomical seated silhouette with folded rear legs and upright front chest; transparent background.
+Avoid: merely squashing the standing image, floating body, disappearing legs, body clipping, extra props, scenery, shadows, glow, text, watermark, or checkerboard background.

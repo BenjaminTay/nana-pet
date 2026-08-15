@@ -7,6 +7,7 @@
 from nana.bubble import Bubble
 from nana.pet_data import (
     ASSETS,
+    APPEARANCE_NAMES,
     CLICK_BAG,
     EMOTION_OF,
     FRAME_INTERVALS,
@@ -29,6 +30,7 @@ from nana.pet_window import PetWindow, random
 __all__ = [
     'Bubble',
     'ASSETS',
+    'APPEARANCE_NAMES',
     'CLICK_BAG',
     'EMOTION_OF',
     'FRAME_INTERVALS',

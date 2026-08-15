@@ -1,0 +1,8 @@
+Use case: stylized-concept
+Asset type: animated desktop pet sprite strip
+Input image: the provided Q pet master is the canonical identity reference. Preserve the exact rounded chibi dog body, human face, brown cap, curly hair, warm bead-like pixel-block texture, palette, proportions, and identity.
+Primary request: Create one clean horizontal eight-frame animation strip of the same Q pet doing a cute small dance. Use a coherent loop with left/right weight shifts, alternating raised front paws, a gentle center bounce, and subtle tail and hair follow-through. It must read as dancing rather than walking or running.
+Composition/framing: complete compact full body in every frame, same practical scale and foot baseline, all frames fully inside their invisible panels with generous transparent padding.
+Style/medium: rounded chibi mascot with the same subtle bead/pixel-block texture as the reference.
+Constraints: keep the lower body grounded while torso, head, paws, tail and hair move rhythmically; preserve the face, cap, texture and identity; transparent background.
+Avoid: rotating the entire raster pet, large leaning, cropped tail or paws, stretched face, walking stride, speed lines, dust, shadows, glow, scenery, text, watermark, guide marks, or frame overlap.

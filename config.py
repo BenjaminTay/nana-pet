@@ -65,6 +65,7 @@ PLATFORM_DEFAULT_HOTKEYS = (MAC_DEFAULT_HOTKEYS
 
 DEFAULT_CONFIG = {
     'pets': [],              # [{'id':0,'x':100,'y':100,'size':'medium','last_fed':0}]
+    'appearance': 'classic', # 新增宠物默认使用的形象：classic / q
     'click_through': False,
     'autostart': False,
     'speech': True,

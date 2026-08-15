@@ -9,6 +9,7 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from qtcompat import QApplication, MODS, QPoint
 import config
+from nana.pet_data import assets_for_appearance, normalize_appearance
 from nana.pet_window import PetWindow
 from nana.size_dialog import SizeDialog
 
@@ -27,6 +28,14 @@ results['invalid_scale_falls_back'] = config.scale_from_pet(
 results['scale_is_clamped'] = (
     config.clamp_scale(0.1) == config.MIN_SCALE
     and config.clamp_scale(99) == config.MAX_SCALE
+)
+results['appearance_names_normalize'] = (
+    normalize_appearance('q') == 'q'
+    and normalize_appearance('unknown') == 'classic'
+)
+results['appearance_assets_exist'] = (
+    assets_for_appearance('classic').endswith('assets/skins/classic')
+    and assets_for_appearance('q').endswith('assets/skins/q')
 )
 
 preview_values = []
@@ -94,6 +103,17 @@ wheel = FakeWheelEvent(-120, MODS.NoModifier)
 before_wheel = pet.scale
 pet.wheelEvent(wheel)
 results['plain_wheel_ignored'] = pet.scale == before_wheel and wheel.ignored
+old_appearance = pet.appearance
+old_center = pet.x() + pet.width() / 2
+old_bottom = pet.y() + pet.height()
+pet.set_appearance('q')
+results['appearance_switches'] = pet.appearance == 'q'
+results['appearance_preserves_anchor'] = (
+    abs(pet.x() + pet.width() / 2 - old_center) <= 1
+    and abs(pet.y() + pet.height() - old_bottom) <= 1
+)
+pet.set_appearance(old_appearance)
+results['appearance_switches_back'] = pet.appearance == 'classic'
 pet.close()
 
 ok = all(results.values())

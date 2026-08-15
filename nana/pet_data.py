@@ -9,6 +9,12 @@ from enum import Enum
 from qtcompat import QGuiApplication
 from config import BASE_DIR
 ASSETS = os.path.join(BASE_DIR, 'assets')
+SKINS_DIR = os.path.join(ASSETS, 'skins')
+APPEARANCE_NAMES = {
+    'classic': '经典高清版',
+    'q': 'Q版',
+}
+DEFAULT_APPEARANCE = 'classic'
 
 # 头部区域（摸头判定），从 head.json 加载
 HEAD = [0.45, 0.0, 1.0, 0.45]
@@ -17,6 +23,31 @@ try:
         HEAD = json.load(f)['head']
 except Exception:
     pass
+
+
+def normalize_appearance(value):
+    """将配置中的形象名称限制在已支持的皮肤范围内。"""
+    value = str(value or DEFAULT_APPEARANCE).lower().strip()
+    return value if value in APPEARANCE_NAMES else DEFAULT_APPEARANCE
+
+
+def assets_for_appearance(appearance):
+    """返回形象素材根目录；缺少皮肤时回退到旧版 assets/。"""
+    key = normalize_appearance(appearance)
+    skin_root = os.path.join(SKINS_DIR, key)
+    if os.path.isdir(os.path.join(skin_root, 'idle')):
+        return skin_root
+    return ASSETS
+
+
+def head_for_appearance(appearance):
+    """读取对应皮肤的摸头区域，旧素材或缺失文件时回退旧值。"""
+    root = assets_for_appearance(appearance)
+    try:
+        with open(os.path.join(root, 'head.json'), encoding='utf-8') as f:
+            return json.load(f)['head']
+    except Exception:
+        return list(HEAD)
 
 
 # ---------------- 语录：从用户提供的文件逐字加载 ----------------

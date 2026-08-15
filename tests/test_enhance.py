@@ -60,18 +60,32 @@ results['longpress_release_no_click'] = len(pet.click_times) == 0
 results['longpress_release_idle'] = pet.state == PetState.IDLE
 pet.close()
 
-# 2) 双击只弹1条（含双击后的 release 不再重复计数）
+# 2) 双击喂食且不重复计数（喂食语句按原有概率出现）
 pet = make_pet()
 send(pet, EV.MouseButtonPress, QPoint(50, 50))
 send(pet, EV.MouseButtonRelease, QPoint(50, 50))
 send(pet, EV.MouseButtonDblClick, QPoint(50, 50))
 send(pet, EV.MouseButtonRelease, QPoint(50, 50))
 QTest.qWait(400)
-results['dblclick_says_1'] = len(pet.said) == 1
+results['dblclick_says_at_most_1'] = len(pet.said) <= 1
 results['dblclick_no_leftover_clicks'] = len(pet.click_times) == 0
+results['dblclick_feeds'] = pet.state == PetState.EAT
+pet.set_state(PetState.SLEEP, loops=-1)
+send(pet, EV.MouseButtonDblClick, QPoint(50, 50))
+results['sleep_dblclick_feeds'] = pet.state == PetState.EAT
 pet.close()
 
-# 3) 6连点 → 1条怒（连点判定回归检查）
+# 3) 明确动作应覆盖唤醒动作，不能被中间的舞蹈状态或情绪语句覆盖
+pet = make_pet()
+pet.set_state(PetState.SLEEP, loops=-1)
+pet.play_action(PetState.DANCE, loops=2)
+results['sleep_dance_final_state'] = pet.state == PetState.DANCE
+pet.set_state(PetState.SLEEP, loops=-1)
+pet.feed()
+results['sleep_feed_final_state'] = pet.state == PetState.EAT
+pet.close()
+
+# 4) 6连点 → 1条怒（连点判定回归检查）
 pet = make_pet()
 for _ in range(6):
     send(pet, EV.MouseButtonPress, QPoint(50, 50))

@@ -8,6 +8,8 @@
 
 - `assets_raw/`：动画生成所使用的原始素材；
 - `assets/`：由原始素材生成的运行时动画帧、图标和辅助数据；
+- `assets/skins/`：经典高清版与 Q 版皮肤的运行时动画帧；
+- `design/visual-concepts/`：本项目视觉方向验证用的概念图与角色标准图；
 - `assets/quotes.txt`：桌宠使用的语录文本。
 
 ## 许可证边界

@@ -50,6 +50,7 @@ jobs:
           python tests/test_mac.py
           python tests/test_scale.py
           python tests/test_hotkeys.py
+          python tests/test_animation_assets.py
 
       - name: Run Windows native window tests
         if: runner.os == 'Windows'

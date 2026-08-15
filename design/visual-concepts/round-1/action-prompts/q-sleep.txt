@@ -1,0 +1,8 @@
+Use case: stylized-concept
+Asset type: animated desktop pet sprite strip
+Input image: the provided Q pet master is the canonical identity reference. Preserve the exact rounded chibi dog body, human face, brown cap, curly hair, warm bead-like pixel-block texture, palette, proportions, and identity.
+Primary request: Create one clean horizontal four-frame animation strip showing the same Q pet truly falling asleep. Frame 1 lowers the head and body; frame 2 settles into a compact sleepy crouch; frame 3 is a stable curled or lowered sleeping pose with closed eyes; frame 4 shows a tiny breathing variation while remaining asleep. Add only one small purple Z sleep mark above and beside the head, never over the cap or face, and keep it consistently attached to the sleeping composition.
+Composition/framing: complete compact full body in every frame, stable base anchor, generous transparent padding, no body part touching the outer canvas edge.
+Style/medium: rounded chibi mascot with the same subtle bead/pixel-block texture as the reference.
+Constraints: closed eyes, relaxed mouth, lowered body, readable sleeping pose, transparent background, one small clean purple Z only.
+Avoid: standing pose with a tilted raster, open alert eyes, Z over the face, Z through the hat, multiple letters, scenery, shadows, glow, text labels, watermark, or cropped body parts.

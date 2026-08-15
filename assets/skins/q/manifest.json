@@ -1,0 +1,14 @@
+{
+  "id": "q",
+  "name": "Q版",
+  "master": "design/visual-concepts/round-1/q-pet-master-v1.png",
+  "states": 15,
+  "frames": 66,
+  "action_frames": {
+    "eat": 6,
+    "dance": 8,
+    "sit": 4,
+    "sleep": 4,
+    "happy": 4
+  }
+}

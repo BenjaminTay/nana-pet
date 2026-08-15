@@ -100,10 +100,26 @@ owner4 = main_mod.PetApp(app)
 results['restart_empty_creates_default'] = len(owner4.pets) == 1
 owner4.on_exit()
 
+# 8) 形象切换写入存档，重启后仍保持 Q 版
+cfg5 = config.load()
+cfg5['pets'] = []
+cfg5['appearance'] = 'classic'
+config.save(cfg5)
+owner5 = main_mod.PetApp(app)
+owner5._set_all_appearance('q')
+owner5.on_exit()
+saved5 = config.load()
+results['appearance_persisted'] = (
+    saved5['pets'] and saved5['pets'][0].get('appearance') == 'q')
+cfg5['pets'] = []
+cfg5['appearance'] = 'classic'
+config.save(cfg5)
+
 # 清理测试痕迹（不影响真实启动）
 cfg4 = config.load()
 cfg4['pets'] = []
 cfg4['click_through'] = False
+cfg4['appearance'] = 'classic'
 config.save(cfg4)
 
 ok = all(results.values())

@@ -17,9 +17,20 @@ BASE = PROJECT_ROOT
 ASSETS = os.path.join(BASE, 'assets')
 SIZES = (16, 24, 32, 48, 64, 128, 256)
 
-master, _ = load_master()
-head = json.load(open(os.path.join(ASSETS, 'head.json'), encoding='utf-8'))['head']
-canvas = build_icon_canvas(master, head, 256)
+ICON_SOURCE = os.environ.get(
+    'NANA_ICON_SOURCE',
+    os.path.join(BASE, 'design', 'visual-concepts', 'round-1',
+                 'app-icon-v1.png'),
+)
+if os.path.isfile(ICON_SOURCE):
+    # 新版图标是独立的品牌素材，不再从低清动画帧中截取狗头。
+    canvas = Image.open(ICON_SOURCE).convert('RGBA')
+    canvas = canvas.resize((1024, 1024), Image.LANCZOS)
+else:
+    # 兼容没有概念素材目录的旧工作区。
+    master, _ = load_master()
+    head = json.load(open(os.path.join(ASSETS, 'head.json'), encoding='utf-8'))['head']
+    canvas = build_icon_canvas(master, head, 256)
 write_ico(os.path.join(ASSETS, 'icon.ico'),
           [(s, canvas.resize((s, s), Image.LANCZOS)) for s in SIZES])
 canvas.save(os.path.join(ASSETS, 'icon.png'))   # macOS 运行时/构建用 png

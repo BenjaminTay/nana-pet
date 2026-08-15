@@ -18,29 +18,37 @@ from nana.bubble import Bubble
 from nana.size_dialog import SizeDialog
 from nana.pet_data import (
     ASSETS,
+    APPEARANCE_NAMES,
     CLICK_BAG,
     EMOTION_OF,
     FRAME_INTERVALS,
     GREET,
-    HEAD,
     LINES,
     QUOTES,
     SIGNATURE,
     PetState,
+    assets_for_appearance,
     emotion_state,
+    head_for_appearance,
+    normalize_appearance,
     screen_geometry_for,
 )
 class PetWindow(QWidget):
     """一只娜娜小狗 = 一个透明窗口 + 独立AI + 情绪语录"""
 
     def __init__(self, pet_id, cfg, last_fed=None, on_remove=None,
-                 on_exit=None, on_state_changed=None):
+                 on_exit=None, on_state_changed=None, appearance=None):
         super().__init__()
         self.pet_id = pet_id
         self.cfg = cfg
         self.on_remove = on_remove
         self.on_exit = on_exit
         self.on_state_changed = on_state_changed
+        self.appearance = normalize_appearance(
+            appearance if appearance is not None
+            else cfg.get('appearance', 'classic'))
+        self.asset_root = assets_for_appearance(self.appearance)
+        self.head_region = head_for_appearance(self.appearance)
 
         flags = (WT.FramelessWindowHint | WT.Tool)
         if self.cfg.get('always_on_top', True):
@@ -130,7 +138,7 @@ class PetWindow(QWidget):
             self.frames[s.value] = frames if frames else idle_frames
 
     def _load_folder(self, name):
-        folder = os.path.join(ASSETS, name)
+        folder = os.path.join(self.asset_root, name)
         if not os.path.isdir(folder):
             return []
         files = sorted(f for f in os.listdir(folder)
@@ -198,6 +206,13 @@ class PetWindow(QWidget):
         if random.random() < chance:
             self.say(QUOTES[key].next(), emotion)
 
+    def play_action(self, state, loops=2, quote_key=None, chance=1.0):
+        """播放一个明确动作，并保证语句不会把动作状态覆盖掉。"""
+        self.last_interaction = time.time()
+        self.set_state(state, loops=loops)
+        if quote_key is not None:
+            self.say_pool(quote_key, chance=chance)
+
     def hide_bubble(self):
         self.bubble.hide()
         self._bubble_hide.stop()
@@ -231,7 +246,7 @@ class PetWindow(QWidget):
         if not self.bubble.isVisible():
             return
         screen = self.current_screen_geometry()
-        head_cx = int(self.width() * (HEAD[0] + HEAD[2]) / 2)
+        head_cx = int(self.width() * (self.head_region[0] + self.head_region[2]) / 2)
         if self.facing < 0:
             head_cx = self.width() - head_cx
         # 尾巴对准头中心：尾巴在气泡内的比例 = 头中心在宠物内的比例
@@ -308,11 +323,11 @@ class PetWindow(QWidget):
             self.start_jump()
             self.say_pool('jump', chance=0.4)
         elif action == PetState.SIT:
-            self.set_state(PetState.SIT, loops=random.randint(2, 5))
-            self.say_pool('sit', chance=0.3)
+            self.play_action(PetState.SIT, loops=random.randint(2, 5),
+                             quote_key='sit', chance=0.3)
         elif action == PetState.DANCE:
-            self.set_state(PetState.DANCE, loops=2)
-            self.say_pool('dance', chance=0.5)
+            self.play_action(PetState.DANCE, loops=2,
+                             quote_key='dance', chance=0.5)
         elif action == PetState.SPIN:
             self.set_state(PetState.SPIN, loops=random.randint(2, 4))
             self.say_pool('spin', chance=0.5)
@@ -380,7 +395,8 @@ class PetWindow(QWidget):
         if self.facing < 0:        # 朝左时帧已镜像，头部坐标同步镜像
             rx = 1.0 - rx
         ry = local.y() / max(self.height(), 1)
-        return HEAD[0] <= rx <= HEAD[2] and HEAD[1] <= ry <= HEAD[3]
+        return (self.head_region[0] <= rx <= self.head_region[2]
+                and self.head_region[1] <= ry <= self.head_region[3])
 
     def mousePressEvent(self, e):
         self.last_interaction = time.time()
@@ -459,14 +475,12 @@ class PetWindow(QWidget):
             self.say(q, emotion=emotion_state(EMOTION_OF[q]))
 
     def mouseDoubleClickEvent(self, e):
-        self.last_interaction = time.time()
         self._click_pending = False     # 取消未处理的单击
         self._click_timer.stop()
         self._longpress_timer.stop()
         self.click_times.clear()        # 双击不计入连点，避免污染后续判定
         self._dbl_clicked = True        # 本次双击的 release 不再计一次点击
-        self.wake_up()
-        self.say(QUOTES['happy'].next(), emotion=PetState.HAPPY)
+        self.feed()
 
     def _start_longpet(self):
         """按住头部≥1秒：进入连续摸头（持续冒爱心直到松手）"""
@@ -486,11 +500,9 @@ class PetWindow(QWidget):
 
     # ---------------- 喂食 ----------------
     def feed(self):
-        self.last_interaction = time.time()
         self.last_fed = time.time()
-        self.wake_up()
-        self.set_state(PetState.EAT, loops=3)
-        self.say_pool('eat', chance=0.7)
+        self.play_action(PetState.EAT, loops=3,
+                         quote_key='eat', chance=0.7)
 
     # ---------------- 拖文件到身上（=把头像P到狗身上！） ----------------
     def dragEnterEvent(self, e):
@@ -500,18 +512,24 @@ class PetWindow(QWidget):
 
     def dropEvent(self, e):
         if e.mimeData().hasUrls():
-            self.last_interaction = time.time()
-            self.wake_up()
-            self.say(LINES[29], emotion=PetState.ANGRY)   # 第30句原句
+            self.play_action(PetState.ANGRY, loops=2)
+            self.say(LINES[29])   # 第30句原句
 
     # ---------------- 右键菜单 ----------------
     def show_pet_menu(self, global_pos):
         menu = QMenu(self)
         menu.addAction('🍖 喂狗粮', self.feed)
-        menu.addAction('💃 跳舞', lambda: (self.wake_up(),
-                                          self.set_state(PetState.DANCE, loops=2)))
-        menu.addAction('🐾 坐下', lambda: self.set_state(PetState.SIT, loops=3))
-        menu.addAction('💤 睡觉', lambda: self.set_state(PetState.SLEEP, loops=-1))
+        menu.addAction('💃 跳舞', lambda: self.play_action(PetState.DANCE, loops=2))
+        menu.addAction('🐾 坐下', lambda: self.play_action(PetState.SIT, loops=3))
+        menu.addAction('💤 睡觉', lambda: self.play_action(PetState.SLEEP, loops=-1))
+        menu.addSeparator()
+        appearance_menu = menu.addMenu('形象')
+        for key, name in APPEARANCE_NAMES.items():
+            marker = '✓ ' if key == self.appearance else '   '
+            appearance_menu.addAction(
+                marker + name,
+                lambda _=False, k=key: self.set_appearance(k),
+            )
         menu.addSeparator()
         size_menu = menu.addMenu('大小')
         for key, name in [('small', '小'), ('medium', '中'), ('large', '大')]:
@@ -558,6 +576,23 @@ class PetWindow(QWidget):
     # ---------------- 大小 / 置顶 ----------------
     def set_size(self, key):
         self.set_scale(config.scale_for_size(key))
+
+    def set_appearance(self, appearance):
+        """切换皮肤，保留位置、大小、当前动作和其他状态。"""
+        appearance = normalize_appearance(appearance)
+        if appearance == self.appearance:
+            return
+
+        self.appearance = appearance
+        self.asset_root = assets_for_appearance(appearance)
+        self.head_region = head_for_appearance(appearance)
+        self.load_frames()
+        self.frame_idx = 0
+        self._scaled_frame_cache.clear()
+        # 重新计算窗口尺寸并保持脚底锚点，避免换肤时宠物跳位。
+        self.set_scale(self.scale, notify=False)
+        self.update_bubble_pos()
+        self._state_changed()
 
     def set_scale(self, scale, notify=True):
         """设置精确比例，保持宠物脚部锚点并同步气泡位置。"""

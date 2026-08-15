@@ -1,0 +1,8 @@
+Use case: stylized-concept
+Asset type: animated desktop pet sprite strip
+Input image: the provided Q pet master is the canonical identity reference. Preserve the exact rounded chibi dog body, human face, brown cap, curly hair, warm bead-like pixel-block texture, palette, proportions, and identity.
+Primary request: Create one clean horizontal four-frame animation strip showing a real sit-down action. Frame 1 is standing; frame 2 lowers the hindquarters; frame 3 folds the rear legs while keeping the chest upright; frame 4 is a stable seated pose with a calm smile. The seated silhouette must clearly read as sitting, not a vertically compressed standing pet.
+Composition/framing: complete compact full body in every frame, same foot/base anchor, generous transparent padding, no body part touching the outer canvas edge.
+Style/medium: rounded chibi mascot with the same subtle bead/pixel-block texture as the reference.
+Constraints: preserve the face, cap, texture and identity; show folded rear legs, lowered hindquarters and naturally supporting front legs; transparent background.
+Avoid: merely squashing the standing image, floating body, disappearing legs, body clipping, extra props, scenery, shadows, glow, text, watermark, or checkerboard background.

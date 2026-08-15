@@ -19,7 +19,11 @@ SRC = os.environ.get(
     'NANA_MASTER_IMAGE',
     _WINDOWS_SRC if os.path.exists(_WINDOWS_SRC)
     else os.path.join(BASE, 'assets_raw', 'nana_12.png'))
-ASSETS = os.path.join(BASE, 'assets')
+ASSETS = os.environ.get('NANA_ASSETS_DIR', os.path.join(BASE, 'assets'))
+ACTION_STATES = {'eat', 'dance', 'sit', 'sleep', 'happy'}
+PRESERVE_ACTIONS = os.environ.get('NANA_PRESERVE_ACTIONS', '1').lower() not in {
+    '0', 'false', 'no', 'off'
+}
 os.makedirs(ASSETS, exist_ok=True)
 
 PAD = 40          # 画布边距（给特效留空间）
@@ -321,6 +325,11 @@ def draw_zzz(img, t, eye_l, eye_r):
 def save_frames(state, frames):
     folder = os.path.join(ASSETS, state)
     os.makedirs(folder, exist_ok=True)
+    existing = [f for f in os.listdir(folder)
+                if f.lower().startswith('frame_') and f.lower().endswith('.png')]
+    if state in ACTION_STATES and PRESERVE_ACTIONS and existing:
+        print(f'{state}: 保留现有动作素材（如需覆盖请设置 NANA_PRESERVE_ACTIONS=0）')
+        return
     for i, f in enumerate(frames):
         f.save(os.path.join(folder, f'frame_{i + 1:03d}.png'))
     print(f'{state}: {len(frames)} 帧')
@@ -367,7 +376,8 @@ def gen_all():
     jump = [
         place(base, squash_img(master, 0.88)),
         place(base, squash_img(master, 1.08)),
-        place(base, master, dy=-70),
+        # 画布上方只留 40px 安全边距，不能再把整只角色推到画布外。
+        place(base, master, dy=-30),
         place(base, squash_img(master, 0.9)),
     ]
     save_frames('jump', jump)

@@ -14,7 +14,7 @@ from nana.hotkeys import GlobalHotkeys
 from nana.settings_dialog import SettingsDialog
 from nana.size_dialog import SizeDialog
 from pet import (PetWindow, PetState, hourly_egg_for, screen_geometry_for,
-                 emotion_state)
+                 APPEARANCE_NAMES, emotion_state)
 
 ICON_FILE = 'icon.png' if IS_MAC else 'icon.ico'   # mac 不读 ico'
 LOG_DIR = os.path.join(config.DATA_DIR, 'logs')
@@ -103,9 +103,12 @@ class PetApp:
         if saved is None:
             self.cfg['next_id'] += 1
         last_fed = saved.get('last_fed') if saved else None
+        appearance = (saved.get('appearance', self.cfg.get('appearance', 'classic'))
+                      if saved else self.cfg.get('appearance', 'classic'))
         pet = PetWindow(pet_id, self.cfg, last_fed=last_fed,
                         on_remove=self.remove_pet, on_exit=self.on_exit,
-                        on_state_changed=self.request_save)
+                        on_state_changed=self.request_save,
+                        appearance=appearance)
         if saved:
             pet.set_scale(config.scale_from_pet(saved), notify=False)
             # 多显示器：按存档坐标所在屏幕钳制，宠物留在原显示器
@@ -148,8 +151,7 @@ class PetApp:
 
     def all_dance(self):
         for pet in self.pets.values():
-            pet.wake_up()
-            pet.set_state(PetState.DANCE, loops=2)
+            pet.play_action(PetState.DANCE, loops=2)
 
     def feed_all(self):
         for pet in self.pets.values():
@@ -193,6 +195,12 @@ class PetApp:
             self.size_menu.addAction(act)
         self.size_menu.addAction('自定义大小…', self._set_all_custom_size)
         self.size_menu.addAction('恢复默认大小', lambda: self._set_all_scale(1.0))
+        self.appearance_menu = menu.addMenu('形象（全部）')
+        for key, name in APPEARANCE_NAMES.items():
+            act = QAction(name, self.appearance_menu)
+            act.triggered.connect(
+                lambda _=False, k=key: self._set_all_appearance(k))
+            self.appearance_menu.addAction(act)
         menu.addAction(self.act_speech)
         menu.addAction(self.act_top)
         menu.addAction(self.act_through)
@@ -218,6 +226,7 @@ class PetApp:
         self.act_feed_all.setEnabled(has_pets)
         self.act_reset.setEnabled(has_pets)
         self.size_menu.setEnabled(has_pets)
+        self.appearance_menu.setEnabled(has_pets)
         self.act_hide.setEnabled(has_pets)
 
     def _add_new(self):
@@ -244,6 +253,12 @@ class PetApp:
     def _set_all_scale(self, scale):
         for pet in self.pets.values():
             pet.set_scale(scale)
+        self.request_save()
+
+    def _set_all_appearance(self, appearance):
+        self.cfg['appearance'] = appearance
+        for pet in self.pets.values():
+            pet.set_appearance(appearance)
         self.request_save()
 
     def _set_all_custom_size(self):
@@ -369,6 +384,7 @@ class PetApp:
         self.cfg['pets'] = [
             {'id': pid, 'x': pet.x(), 'y': pet.y(), 'size': pet.size_key,
              'scale': pet.scale,
+             'appearance': pet.appearance,
              'last_fed': pet.last_fed}
             for pid, pet in self.pets.items()
         ]

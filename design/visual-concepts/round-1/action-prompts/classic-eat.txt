@@ -1,0 +1,8 @@
+Use case: stylized-concept
+Asset type: animated desktop pet sprite strip
+Input image: the provided Classic HD pet master is the canonical identity reference. Preserve the exact dog body, human face, brown cap, curly hair, fur texture, warm palette, proportions, and front-facing character identity.
+Primary request: Create one clean horizontal six-frame animation strip for the same pet eating a small white dog bone. Six separate full-body frames, evenly spaced from left to right, no overlap between frames, consistent scale and foot baseline. Frame 1 is neutral and notices the bone; frame 2 leans the head slightly toward it; frame 3 brings the bone directly to the lower lip; frame 4 gently bites the bone with the mouth naturally contacting it; frame 5 chews with the bone tilted slightly; frame 6 finishes eating with a satisfied expression.
+Composition/framing: full body in every frame, centered inside each invisible panel, generous transparent padding, no body part touching the outer canvas edge.
+Style/medium: polished high-definition mascot illustration matching the reference.
+Constraints: the bone is small, clearly attached to the mouth in frames 3-5, partially occluded by the lips when bitten, and never floating below the chin; preserve the face and cap; keep the feet aligned; transparent background.
+Avoid: bowl, extra food, extra characters, scenery, shadows, glow, motion lines, detached crumbs, checkerboard background, labels, text, watermark, cropped tail, cropped paws, body rotation, or a bone covering the whole face.

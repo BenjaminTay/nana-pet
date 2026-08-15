@@ -13,6 +13,7 @@
 - ⌨️ **全局快捷键**：Windows 和 macOS 均支持跳舞 / 喂食 / 复位 / 隐藏 / 说话 / 置顶 / 穿透 / 添加，并可在设置里自定义
 - 🖼 **多只共存**：任意添加多只，位置自动错开，各自记住自己的位置、大小、喂食时间
 - 🔍 **连续缩放**：右键宠物使用滑块或预设大小；macOS 按住 `Option`、Windows 按住 `Alt` 滚轮缩放
+- 🎨 **可切换形象**：经典高清版与 Q 版独立皮肤共存，可从宠物右键菜单或托盘菜单切换；每只宠物会记住自己的形象
 - 📌 **置顶 / 鼠标穿透**：可开关，穿透后从托盘恢复；气泡与宠物 Z 序严格一致
 - 🚀 **开机自启**：托盘菜单一键开关
 - 💾 **状态持久化**：位置、精确大小、喂食时间会自动保存，重启恢复
@@ -93,7 +94,8 @@ macOS 菜单栏中新增“显示/恢复全部宠物”，用于宠物被隐藏�
 
 ## 测试
 
-测试包括离屏交互、macOS 快捷键映射和 Windows 真实窗口层级测试：
+测试包括离屏交互、连续缩放、macOS 快捷键映射、动画资源边缘与基线检查，以及
+Windows 真实窗口层级测试：
 
 ```bash
 python tests/test_enhance.py
@@ -101,7 +103,14 @@ python tests/test_main.py
 python tests/test_mac.py
 python tests/test_top.py
 python tests/test_zorder.py
+python tests/test_scale.py
+python tests/test_hotkeys.py
+python tests/test_animation_assets.py
 ```
+
+其中 `test_animation_assets.py` 会检查 Classic/Q 版全部状态是否使用统一画布、
+是否触碰画布边缘、是否存在明显白底/黑边残留，并额外检查 `happy` 动画的可见
+高度与脚底基线。CI 会在 Ubuntu、macOS 和 Windows 上运行跨平台测试。
 
 ## 目录结构
 
@@ -114,9 +123,10 @@ nana-pet/
 ├── mac_native.py        # macOS NSWindow 层级与 Quartz 全局快捷键
 ├── config.py            # 配置读写、开机自启（Windows 注册表 / macOS LaunchAgent）
 ├── qtcompat.py          # Qt 版本兼容层（enum 命名差异、事件构造）
-├── assets/              # 运行时素材：15 个状态帧目录 + head.json + quotes.txt + 图标
+├── assets/              # 运行时素材：经典素材、皮肤目录、15 个状态帧目录 + head.json + quotes.txt + 图标
 ├── assets_raw/          # 原始素材图（生成 assets 的输入）
-├── tests/               # 五套自动化测试
+├── design/visual-concepts/ # 应用图标、高清版、Q版的视觉概念与验收素材
+├── tests/               # 交互、平台、缩放、快捷键和素材 QA 测试
 ├── tools/               # 素材帧和图标生成工具
 ├── packaging/           # Windows / macOS 打包配置与脚本
 ├── VERSION              # 当前发布版本
@@ -134,20 +144,44 @@ nana-pet/
 | 打包安装版 | `%APPDATA%\NanaDog\config.json`，日志在 `%APPDATA%\NanaDog\logs\` |
 | macOS 源码/打包版 | `~/Library/Application Support/NanaDog/config.json`，日志在同目录的 `logs/` |
 
-配置内容：宠物列表（id/坐标/大小/精确缩放比例/上次喂食时间）、穿透、置顶、说话、自启、饥饿小时数、8 组自定义快捷键。
+配置内容：宠物列表（id/坐标/大小/精确缩放比例/形象/上次喂食时间）、新增宠物默认形象、穿透、置顶、说话、自启、饥饿小时数、8 组自定义快捷键。
 
 ## 素材再生成
 
 素材生成器需要先安装 `requirements-build.txt`。
 
 - 全套动画帧 + 图标：`python tools/gen_assets_nana.py`（读取 `assets_raw/` 与 `assets/head.json`）
-- 仅图标：`python tools/gen_icon.py`（输出 `assets/icon.ico`、`assets/icon.png`；macOS 额外输出 `assets/icon.icns`）
+- 仅图标：`python tools/gen_icon.py`（优先读取 `design/visual-concepts/round-1/app-icon-v1.png`，输出 `assets/icon.ico`、`assets/icon.png`；macOS 额外输出 `assets/icon.icns`）
+- 动作条拆帧与清理：`python tools/install_action_strips.py --strip <动作条.png> --output-dir <状态目录> --frames <帧数> --reference-dir <对应皮肤>/idle`
 
 素材生成器支持通过 `NANA_MASTER_IMAGE` 指定原始素材路径，避免依赖 Windows 固定路径：
 
 ```bash
 NANA_MASTER_IMAGE=/absolute/path/to/source.png python tools/gen_assets_nana.py
 ```
+
+如需指定其他图标标准图，可设置 `NANA_ICON_SOURCE=/absolute/path/to/icon.png`。
+
+经典高清版和 Q 版皮肤使用同一个生成器、不同的输出目录。例如：
+
+```bash
+NANA_MASTER_IMAGE=/absolute/path/to/classic-master.png \
+NANA_ASSETS_DIR=/absolute/path/to/nana-pet/assets/skins/classic \
+python tools/gen_assets_nana.py
+
+NANA_MASTER_IMAGE=/absolute/path/to/q-master.png \
+NANA_ASSETS_DIR=/absolute/path/to/nana-pet/assets/skins/q \
+python tools/gen_assets_nana.py
+```
+
+动作优化素材默认不会被全套生成器覆盖；如需明确回退到程序生成的旧版动作，设置 `NANA_PRESERVE_ACTIONS=0`。当前 Classic/Q 版的喂食、跳舞、坐下、睡觉、happy 动作由 `design/visual-concepts/round-1/action-repairs/` 的动作条确定性拆帧安装。安装动作条时应使用对应皮肤的 `idle` 目录作为 `--reference-dir`，让新动作继承同一套画布规格，避免切换时整体缩放。
+
+动作安装器会移除动作条相邻面板残片和透明背景边缘光晕，再以对应皮肤的 idle
+帧统一缩放、脚底对齐并写入透明画布。修改动作条后，应运行
+`python tests/test_animation_assets.py`，再重新构建 macOS 或 Windows 安装包。
+
+概念素材位于 `design/visual-concepts/round-1/`，当前两套皮肤已经生成并接入运行时；原来的
+`assets/` 经典帧目录仍保留，便于回滚和兼容旧环境。
 
 ## 开源协议
 

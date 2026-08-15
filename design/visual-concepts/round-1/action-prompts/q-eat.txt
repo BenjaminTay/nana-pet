@@ -1,0 +1,8 @@
+Use case: stylized-concept
+Asset type: animated desktop pet sprite strip
+Input image: the provided Q pet master is the canonical identity reference. Preserve the exact rounded chibi dog body, human face, brown cap, curly hair, warm bead-like pixel-block texture, palette, proportions, and identity.
+Primary request: Create one clean horizontal six-frame animation strip for the same Q pet eating a small white dog bone. Six separate full-body frames, evenly spaced from left to right, no overlap, consistent scale and foot baseline. Frame 1 notices the bone; frame 2 leans toward it; frame 3 places the bone directly at the lower lip; frame 4 gently bites it; frame 5 chews with a slight bone tilt; frame 6 finishes with a satisfied expression.
+Composition/framing: compact full body in every frame, centered inside each invisible panel, generous transparent padding, no body part touching the outer canvas edge.
+Style/medium: rounded chibi mascot with the same subtle bead/pixel-block texture as the reference.
+Constraints: the bone is small, clearly touches the mouth in frames 3-5, is partly occluded by the lips when bitten, and never floats below the chin; preserve the face, cap, texture and proportions; transparent background.
+Avoid: bowl, extra food, extra characters, scenery, shadows, glow, detached crumbs, checkerboard background, labels, text, watermark, cropped tail, cropped paws, body rotation, or a bone covering the whole face.

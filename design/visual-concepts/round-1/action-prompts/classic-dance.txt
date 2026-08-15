@@ -1,0 +1,8 @@
+Use case: stylized-concept
+Asset type: animated desktop pet sprite strip
+Input image: the provided Classic HD pet master is the canonical identity reference. Preserve the exact dog body, human face, brown cap, curly hair, fur texture, warm palette, proportions, and front-facing character identity.
+Primary request: Create one clean horizontal eight-frame animation strip of the same pet doing a cute small dance. Use a coherent loop: neutral, weight shift left with one front paw raised, center bounce, weight shift right with the other front paw raised, neutral, repeat with a slightly different head and tail follow-through. The movement must read as dancing, not walking or running.
+Composition/framing: full body in every frame, complete silhouette, same practical scale and foot baseline, all frames fully inside their invisible panels with generous transparent padding.
+Style/medium: polished high-definition mascot illustration matching the reference.
+Constraints: keep the lower body grounded while the torso, head, front paws, tail and hair show restrained rhythmic motion; preserve the face, cap, fur and identity; transparent background.
+Avoid: rotating the entire raster pet, large leaning, cropped tail or paws, stretched face, walking stride, speed lines, dust, shadows, glow, scenery, text, watermark, guide marks, or frame overlap.
