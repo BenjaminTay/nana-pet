@@ -37,6 +37,7 @@ python tests/test_scale.py
 python tests/test_hotkeys.py
 python tests/test_animation_assets.py
 python tests/test_window_edges.py
+python tests/test_quote_modes.py
 ```
 
 Windows 原生窗口层级测试需要在 Windows 上运行：
@@ -47,6 +48,13 @@ python tests/test_zorder.py
 ```
 
 `test_animation_assets.py` 会检查 Classic/Q 版全部状态的帧数、画布尺寸、透明边缘、安全留白、背景泄漏、idle 回退和 `happy` 动画基线。
+
+## 语录维护
+
+- 语录原文统一维护在 `assets/quotes.txt`，格式为 `N. 内容`；程序按文件顺序使用 1-based 行号映射，因此新增语录应追加到文件末尾，不要在中间插入或删除行。
+- `nana/pet_data.py` 的 `QUOTES` 负责普通语录的场景分组，`ADULT_QUOTE_GROUPS` 负责成人语录分组；分组同时决定随机触发场景和宠物情绪。
+- 成人语录模式由配置项 `adult_quotes` 控制，默认开启，也可以从托盘菜单切换。关闭后，新增成人语录不会进入随机池；开启后会与普通语录合并，并沿用 `idle`、`happy`、`sing` 或 `angry` 情绪。
+- 修改语录或分组后，至少运行 `python tests/test_quote_modes.py` 和 `python tests/test_enhance.py`，确认语录加载、情绪映射、气泡显示和互动触发没有回归。
 
 ## Windows 打包
 

@@ -53,6 +53,10 @@ class PetApp:
         self.tray.activated.connect(self._on_tray_activated)
 
         self.act_speech = QAction('💬 说话', checkable=True, checked=self.cfg['speech'])
+        self.act_adult_quotes = QAction(
+            '🔞 成人语录', checkable=True,
+            checked=self.cfg.get('adult_quotes', True),
+        )
         self.act_top = QAction('📌 置顶显示', checkable=True,
                                checked=self.cfg['always_on_top'])
         self.act_through = QAction('🖱 鼠标穿透（穿透后从托盘恢复）', checkable=True,
@@ -61,6 +65,7 @@ class PetApp:
                                      checked=config.get_autostart())
         self.act_hide = QAction('🙈 隐藏（点托盘恢复）', checkable=True, checked=False)
         self.act_speech.toggled.connect(self._on_speech)
+        self.act_adult_quotes.toggled.connect(self._on_adult_quotes)
         self.act_top.toggled.connect(self._on_always_on_top)
         self.act_through.toggled.connect(self._on_click_through)
         self.act_autostart.toggled.connect(self._on_autostart)
@@ -206,6 +211,7 @@ class PetApp:
                 lambda _=False, k=key: self._set_all_appearance(k))
             self.appearance_menu.addAction(act)
         menu.addAction(self.act_speech)
+        menu.addAction(self.act_adult_quotes)
         menu.addAction(self.act_top)
         menu.addAction(self.act_through)
         menu.addAction(self.act_hide)
@@ -293,6 +299,12 @@ class PetApp:
             for pet in self.pets.values():
                 pet.hide_bubble()
         self.request_save()
+
+    def _on_adult_quotes(self, enabled):
+        """切换成人语录池；关闭后只使用普通语录，当前气泡不受影响。"""
+        self.cfg['adult_quotes'] = enabled
+        self.request_save()
+        logging.info('成人语录: %s', enabled)
 
     def _on_always_on_top(self, enabled):
         self.cfg['always_on_top'] = enabled

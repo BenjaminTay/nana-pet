@@ -69,6 +69,7 @@ DEFAULT_CONFIG = {
     'click_through': False,
     'autostart': False,
     'speech': True,
+    'adult_quotes': True,     # 成人语录池；保留直播破防/粗口，但可从托盘关闭
     'always_on_top': True,   # 置顶显示（关闭后会被窗口挡住）
     'next_id': 0,
     'hungry_hours': 3,       # 几小时没喂就喊饿

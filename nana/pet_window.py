@@ -20,17 +20,19 @@ from nana.pet_data import (
     ASSETS,
     APPEARANCE_NAMES,
     CLICK_BAG,
+    CLICK_BAG_WITH_ADULT,
     EMOTION_OF,
+    EMOTION_OF_WITH_ADULT,
     FRAME_INTERVALS,
     GREET,
     LINES,
-    QUOTES,
     SIGNATURE,
     PetState,
     assets_for_appearance,
     emotion_state,
     head_for_appearance,
     normalize_appearance,
+    quote_bag,
     screen_geometry_for,
 )
 class PetWindow(QWidget):
@@ -204,7 +206,8 @@ class PetWindow(QWidget):
 
     def say_pool(self, key, emotion=None, chance=1.0):
         if random.random() < chance:
-            self.say(QUOTES[key].next(), emotion)
+            adult = self.cfg.get('adult_quotes', True)
+            self.say(quote_bag(key, adult=adult).next(), emotion)
 
     def play_action(self, state, loops=2, quote_key=None, chance=1.0):
         """播放一个明确动作，并保证语句不会把动作状态覆盖掉。"""
@@ -499,18 +502,25 @@ class PetWindow(QWidget):
         self.click_times = [t for t in self.click_times if now - t < 5]
         if len(self.click_times) >= 6:
             self.click_times.clear()
-            self.say(QUOTES['angry'].next(), emotion=PetState.ANGRY)
+            adult = self.cfg.get('adult_quotes', True)
+            self.say(quote_bag('angry', adult=adult).next(),
+                     emotion=PetState.ANGRY)
             return
         if len(self.click_times) >= 3:
-            self.say(QUOTES['happy'].next(), emotion=PetState.HAPPY)
+            adult = self.cfg.get('adult_quotes', True)
+            self.say(quote_bag('happy', adult=adult).next(),
+                     emotion=PetState.HAPPY)
             return
         if self.is_head(self._click_pos):
             self.set_state(PetState.HAPPY, loops=2)
             self.say_pool('pet', chance=0.7)
         else:
-            # 身体点击：100句全量随机，表情随语录情绪走（喜怒哀乐悲都会出现）
-            q = CLICK_BAG.next()
-            self.say(q, emotion=emotion_state(EMOTION_OF[q]))
+            # 身体点击：普通模式全量随机；成人模式包含新增成人语录，表情随情绪走。
+            adult = self.cfg.get('adult_quotes', True)
+            bag = CLICK_BAG_WITH_ADULT if adult else CLICK_BAG
+            emotion_of = EMOTION_OF_WITH_ADULT if adult else EMOTION_OF
+            q = bag.next()
+            self.say(q, emotion=emotion_state(emotion_of[q]))
 
     def mouseDoubleClickEvent(self, e):
         self._click_pending = False     # 取消未处理的单击
@@ -528,7 +538,8 @@ class PetWindow(QWidget):
         self._long_petting = True
         self.wake_up()
         self.set_state(PetState.HAPPY, loops=-1)     # 循环爱心帧
-        self.say(QUOTES['happy'].next())             # 不传emotion，避免覆盖loops=-1
+        self.say(quote_bag('happy', adult=self.cfg.get('adult_quotes', True)).next())
+                                                    # 不传emotion，避免覆盖loops=-1
 
     def wake_up(self):
         if self.state == PetState.SLEEP:

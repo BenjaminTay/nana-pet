@@ -100,8 +100,9 @@ class QuoteBag:
 
 QUOTES = {
     # 喜怒哀乐悲五情（每句按语境配表情）
-    'angry': QuoteBag(L(6, 7, 8, 10, 12, 14, 15, 17, 18, 19, 20, 21, 23, 24,
-                       25, 26, 30, 38, 45, 46, 47, 51, 54, 57, 62, 63, 64, 72,
+    # 18/21/26/45 的素材已由补充语录中的更完整直播版本承接，不再重复抽取。
+    'angry': QuoteBag(L(6, 7, 8, 10, 12, 14, 15, 17, 19, 20, 23, 24,
+                       25, 30, 38, 46, 47, 51, 54, 57, 62, 63, 64, 72,
                        73, 78, 82, 86, 93, 98)),
     'cry': QuoteBag(L(11, 27, 29, 52, 59, 92)),
     'sad': QuoteBag(L(9, 22, 28, 31, 32, 33, 53, 55, 58, 65, 67, 69, 70, 71,
@@ -125,6 +126,31 @@ QUOTES = {
     'spin': QuoteBag(L(34, 37)),
     'shy': QuoteBag(L(32, 33)),
 }
+
+# 成人语录：保留直播录屏中的口音、错别字和破防表达，不改写原句。
+# “成人”是内容开关，不是情绪；这里仍按情绪分组，让气泡出现时能同步表情。
+ADULT_QUOTE_GROUPS = {
+    'idle': L(101, 107, 110, 118),
+    'happy': L(102, 103),
+    'sing': L(104, 105),
+    'angry': L(106, 108, 109, 111, 112, 113, 114, 115, 116, 117, 119),
+}
+ADULT_QUOTES = {
+    key: QuoteBag(lines) for key, lines in ADULT_QUOTE_GROUPS.items()
+}
+
+# 成人模式下，动作语录仍按原来的场景选择，只是场景袋会并入成人语录。
+QUOTES_WITH_ADULT = {
+    key: QuoteBag(QUOTES[key].quotes + ADULT_QUOTE_GROUPS.get(key, []))
+    for key in QUOTES
+}
+
+
+def quote_bag(key, adult=False):
+    """按内容模式返回场景语录袋；成人模式保留普通语录并追加成人语录。"""
+    return QUOTES_WITH_ADULT[key] if adult else QUOTES[key]
+
+
 SIGNATURE = LINES[15]   # 第16句：我可不是娇滴滴的女王……
 GREET = {'morning': LINES[0], 'noon': LINES[38], 'evening': LINES[40], 'night': LINES[40]}
 
@@ -140,6 +166,15 @@ for _key in _EMOTION_PRIORITY:
 
 # 点击语录全局袋：61句全量随机（防重复），表情随语录情绪走
 CLICK_BAG = QuoteBag(list(EMOTION_OF.keys()))
+
+# 身体点击的全局随机池：成人模式下追加成人语录，并沿用对应情绪。
+ADULT_EMOTION_OF = {}
+for _key, _quotes in ADULT_QUOTE_GROUPS.items():
+    for _q in _quotes:
+        ADULT_EMOTION_OF[_q] = _key
+EMOTION_OF_WITH_ADULT = dict(EMOTION_OF)
+EMOTION_OF_WITH_ADULT.update(ADULT_EMOTION_OF)
+CLICK_BAG_WITH_ADULT = QuoteBag(list(EMOTION_OF_WITH_ADULT.keys()))
 
 # 非PetState的情绪键 → 状态映射
 _STATE_OF_EMOTION = {'hungry': 'ANGRY', 'pickup': 'ANGRY', 'sleep': 'SLEEP',

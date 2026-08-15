@@ -56,6 +56,13 @@ owner2._on_speech(False)
 results['speech_off_hides_bubble'] = not pet0.bubble.isVisible()
 owner2._on_speech(True)
 
+# 4b) 成人语录开关：默认开启，可从托盘关闭并恢复
+results['adult_quotes_default_on'] = owner2.cfg.get('adult_quotes') is True
+owner2._on_adult_quotes(False)
+results['adult_quotes_can_disable'] = owner2.cfg.get('adult_quotes') is False
+owner2._on_adult_quotes(True)
+results['adult_quotes_can_restore'] = owner2.cfg.get('adult_quotes') is True
+
 # 5) 穿透开关：宠物与气泡 flag 同步开/关（图层行为一致）
 owner2._on_click_through(True)
 results['through_on_pet'] = bool(

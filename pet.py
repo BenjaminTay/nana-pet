@@ -7,9 +7,13 @@
 from nana.bubble import Bubble
 from nana.pet_data import (
     ASSETS,
+    ADULT_QUOTES,
+    ADULT_QUOTE_GROUPS,
     APPEARANCE_NAMES,
     CLICK_BAG,
+    CLICK_BAG_WITH_ADULT,
     EMOTION_OF,
+    EMOTION_OF_WITH_ADULT,
     FRAME_INTERVALS,
     GREET,
     HEAD,
@@ -17,12 +21,14 @@ from nana.pet_data import (
     LINES,
     L,
     QUOTES,
+    QUOTES_WITH_ADULT,
     QuoteBag,
     SIGNATURE,
     PetState,
     emotion_state,
     hourly_egg_for,
     load_quotes,
+    quote_bag,
     screen_geometry_for,
 )
 from nana.pet_window import PetWindow, random
@@ -30,9 +36,13 @@ from nana.pet_window import PetWindow, random
 __all__ = [
     'Bubble',
     'ASSETS',
+    'ADULT_QUOTES',
+    'ADULT_QUOTE_GROUPS',
     'APPEARANCE_NAMES',
     'CLICK_BAG',
+    'CLICK_BAG_WITH_ADULT',
     'EMOTION_OF',
+    'EMOTION_OF_WITH_ADULT',
     'FRAME_INTERVALS',
     'GREET',
     'HEAD',
@@ -40,6 +50,7 @@ __all__ = [
     'LINES',
     'L',
     'QUOTES',
+    'QUOTES_WITH_ADULT',
     'QuoteBag',
     'SIGNATURE',
     'PetState',
@@ -48,5 +59,6 @@ __all__ = [
     'emotion_state',
     'hourly_egg_for',
     'load_quotes',
+    'quote_bag',
     'screen_geometry_for',
 ]
