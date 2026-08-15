@@ -44,6 +44,7 @@ jobs:
           if-no-files-found: error
           path: |
             dist/NANA DOG.app
+            dist/NANA DOG-macOS-arm64-App.zip
             dist/NANA DOG.dmg
 
   windows:
@@ -69,6 +70,9 @@ jobs:
       - name: Build application
         run: python -m PyInstaller "packaging/windows/NANA DOG.spec" --noconfirm
 
+      - name: Build single-file portable application
+        run: python -m PyInstaller "packaging/windows/NANA DOG Portable.spec" --noconfirm
+
       - name: Build installer
         run: python -m PyInstaller "packaging/windows/NANA DOG Setup.spec" --noconfirm
 
@@ -79,6 +83,7 @@ jobs:
           if-no-files-found: error
           path: |
             dist/NANA DOG
+            dist/NANA DOG Portable.exe
             dist/NANA DOG Setup.exe
 
   release:
@@ -109,14 +114,20 @@ jobs:
           mkdir -p release-assets/upload
           cp "release-assets/macos/NANA DOG.dmg" \
              "release-assets/upload/NANA DOG-macOS-arm64.dmg"
+          cp "release-assets/macos/NANA DOG-macOS-arm64-App.zip" \
+             "release-assets/upload/NANA DOG-macOS-arm64-App.zip"
           cp "release-assets/windows/NANA DOG Setup.exe" \
              "release-assets/upload/NANA DOG-Windows-Setup.exe"
+          cp "release-assets/windows/NANA DOG Portable.exe" \
+             "release-assets/upload/NANA DOG-Windows-Portable.exe"
           test -d "release-assets/windows/NANA DOG"
           (cd release-assets/windows && \
             zip -r "../upload/NANA DOG-Windows-Portable.zip" "NANA DOG")
           (cd release-assets/upload && \
             sha256sum "NANA DOG-macOS-arm64.dmg" \
+                      "NANA DOG-macOS-arm64-App.zip" \
                       "NANA DOG-Windows-Setup.exe" \
+                      "NANA DOG-Windows-Portable.exe" \
                       "NANA DOG-Windows-Portable.zip" \
               > SHA256SUMS.txt)
 

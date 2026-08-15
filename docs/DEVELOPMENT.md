@@ -72,10 +72,15 @@ python tests/test_zorder.py
 ```bat
 py -3.12 -m pip install -r requirements-build.txt
 py -3.12 -m PyInstaller "packaging\windows\NANA DOG.spec" --noconfirm
+py -3.12 -m PyInstaller "packaging\windows\NANA DOG Portable.spec" --noconfirm
 py -3.12 -m PyInstaller "packaging\windows\NANA DOG Setup.spec" --noconfirm
 ```
 
-安装程序输出到 `dist\NANA DOG Setup.exe`，安装后程序位于 `%LOCALAPPDATA%\Programs\NanaDog\`。
+构建会生成：
+
+- `dist\NANA DOG\`：文件夹版程序本体，可压缩后便携运行；
+- `dist\NANA DOG Portable.exe`：单文件便携版，启动时会先解压依赖；
+- `dist\NANA DOG Setup.exe`：安装程序，安装后程序位于 `%LOCALAPPDATA%\NanaDog\`。
 
 ## macOS 打包
 
@@ -92,6 +97,7 @@ open "dist/NANA DOG.app"
 构建脚本会生成：
 
 - `dist/NANA DOG.app`
+- `dist/NANA DOG-macOS-arm64-App.zip`：保留 `.app` 结构的直接运行分享包；
 - `dist/NANA DOG.dmg`
 
 如果脚本没有执行权限，先运行：
@@ -106,7 +112,7 @@ chmod +x packaging/macos/build_mac.sh
 
 - `CI` 工作流在 Ubuntu、macOS 和 Windows 上运行跨平台测试；Windows 额外运行真实窗口层级测试。
 - `Build packages` 工作流可以手动触发，也会在推送 `v*` 标签时运行。
-- 推送版本标签后，工作流会构建 macOS arm64 DMG、Windows 安装程序、Windows 便携版 ZIP，并生成 `SHA256SUMS.txt`。
+- 推送版本标签后，工作流会构建 macOS arm64 DMG、macOS App ZIP、Windows 安装程序、Windows 单文件便携版 EXE、Windows 文件夹便携版 ZIP，并生成 `SHA256SUMS.txt`。
 - Release 标题使用 `NANA DOG <tag>`，例如 `NANA DOG v0.2.0`。
 
 发布前建议确认 `VERSION`、`CHANGELOG.md` 和 README 的下载说明保持一致，然后推送版本标签：

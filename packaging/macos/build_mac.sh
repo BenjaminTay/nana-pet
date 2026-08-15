@@ -26,6 +26,12 @@ fi
 echo "构建完成：dist/NANA DOG.app"
 echo "启动命令：open 'dist/NANA DOG.app'"
 
+# GitHub Release 不能直接上传目录，因此额外提供一个保留 .app 结构的 ZIP。
+ditto -c -k --sequesterRsrc --keepParent \
+  "dist/NANA DOG.app" \
+  "dist/NANA DOG-macOS-arm64-App.zip"
+echo "App ZIP 完成：dist/NANA DOG-macOS-arm64-App.zip"
+
 # 生成可直接分享的 DMG：拖到 Applications 即可安装。
 if command -v hdiutil >/dev/null 2>&1; then
   STAGE_DIR="$(mktemp -d)"

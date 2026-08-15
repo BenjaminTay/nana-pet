@@ -26,13 +26,15 @@ NANA DOG 是一个使用 Python + PySide6 编写的桌面宠物，支持 Windows
 
 前往 [GitHub Releases](https://github.com/BenjaminTay/nana-pet/releases) 下载适合你系统的版本：
 
-| 平台 | 安装包 | 说明 |
+| 平台 | 发布产物 | 说明 |
 | --- | --- | --- |
 | Windows 10/11（64 位） | `NANA DOG-Windows-Setup.exe` | 推荐，安装到当前用户目录，无需管理员权限 |
-| Windows 10/11（64 位） | `NANA DOG-Windows-Portable.zip` | 解压后直接运行 |
+| Windows 10/11（64 位） | `NANA DOG-Windows-Portable.exe` | 单文件便携版，下载后直接双击运行；首次启动会稍慢 |
+| Windows 10/11（64 位） | `NANA DOG-Windows-Portable.zip` | 文件夹便携版，解压后直接运行，启动更快 |
 | macOS 13+（Apple Silicon） | `NANA DOG-macOS-arm64.dmg` | 打开后将应用拖入 Applications |
+| macOS 13+（Apple Silicon） | `NANA DOG-macOS-arm64-App.zip` | 解压后直接双击打开 `NANA DOG.app` |
 
-版本标签推送后，GitHub Actions 会自动构建以上安装包，并生成 `SHA256SUMS.txt` 校验文件。
+版本标签推送后，GitHub Actions 会自动构建以上发布产物，并生成 `SHA256SUMS.txt` 校验文件。
 
 ## 从源码运行
 
