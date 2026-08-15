@@ -50,6 +50,10 @@ RENDER_AA = (QPainter.RenderHint.Antialiasing
 PEN_NOPEN = Qt.PenStyle.NoPen if QT6 else Qt.NoPen
 ALIGN_HC = (Qt.AlignmentFlag.AlignHCenter
             if QT6 else Qt.AlignHCenter)
+ALIGN_LEFT = (Qt.AlignmentFlag.AlignLeft
+              if QT6 else Qt.AlignLeft)
+ALIGN_VC = (Qt.AlignmentFlag.AlignVCenter
+            if QT6 else Qt.AlignVCenter)
 ASPECT_KEEP = (Qt.AspectRatioMode.KeepAspectRatio
                if QT6 else Qt.KeepAspectRatio)
 TRANS_SMOOTH = (Qt.TransformationMode.SmoothTransformation

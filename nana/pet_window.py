@@ -18,6 +18,7 @@ from nana.bubble import Bubble
 from nana.size_dialog import SizeDialog
 from nana.pet_data import (
     ASSETS,
+    ADULT_EMOTION_OF,
     APPEARANCE_NAMES,
     CLICK_BAG,
     CLICK_BAG_WITH_ADULT,
@@ -35,6 +36,15 @@ from nana.pet_data import (
     quote_bag,
     screen_geometry_for,
 )
+
+
+# Classic/Q 版运行时画布共用 444px 高度和稳定的上下安全留白。
+# 气泡应锚定可见角色区域，而不是透明窗口的外框边缘。
+VISIBLE_ART_TOP_RATIO = 96 / 444
+VISIBLE_ART_BOTTOM_RATIO = 428 / 444
+VISIBLE_BUBBLE_GAP = 6
+
+
 class PetWindow(QWidget):
     """一只娜娜小狗 = 一个透明窗口 + 独立AI + 情绪语录"""
 
@@ -107,7 +117,7 @@ class PetWindow(QWidget):
         self.bubble = Bubble(self.cfg.get('always_on_top', True))
         self._bubble_hide = QTimer(self)
         self._bubble_hide.setSingleShot(True)
-        self._bubble_hide.timeout.connect(self.hide_bubble)
+        self._bubble_hide.timeout.connect(lambda: self.hide_bubble(animate=True))
         self._bubble_sync = QTimer(self)          # 气泡持续跟随宠物
         self._bubble_sync.timeout.connect(self.update_bubble_pos)
         self._bubble_sync.start(100)
@@ -196,11 +206,19 @@ class PetWindow(QWidget):
             self.set_state(emotion, loops=2)
         if not self.cfg.get('speech', True):
             return
-        self.bubble.set_text(text)
+        bubble_was_visible = self.bubble.isVisible()
+        bubble_emotion = emotion if emotion is not None else self.state
+        adult = (self.cfg.get('adult_quotes', True)
+                 and text in ADULT_EMOTION_OF)
+        self.bubble.set_text(text, emotion=bubble_emotion, adult=adult)
         self.bubble.show()
         self.update_bubble_pos()   # show 之后再定位，避免闪现旧位置
         apply_window_level(self.bubble, self.cfg.get('always_on_top', True))
         self._sync_bubble_z()      # 气泡Z序钉在宠物正上方，两层图层永远一致
+        if bubble_was_visible:
+            self.bubble.show_static()
+        else:
+            self.bubble.start_show_animation()
         # 长句多留点时间看，最长8秒
         self._bubble_hide.start(min(8000, 3200 + len(text) * 25))
 
@@ -216,9 +234,12 @@ class PetWindow(QWidget):
         if quote_key is not None:
             self.say_pool(quote_key, chance=chance)
 
-    def hide_bubble(self):
-        self.bubble.hide()
+    def hide_bubble(self, animate=False):
         self._bubble_hide.stop()
+        if animate:
+            self.bubble.start_hide_animation()
+        else:
+            self.bubble.hide_immediately()
 
     def _sync_bubble_z(self):
         """原生 SetWindowPos 把气泡钉在宠物窗口正上方（Z序），
@@ -267,10 +288,13 @@ class PetWindow(QWidget):
         # 尾巴对准头中心：尾巴在气泡内的比例 = 头中心在宠物内的比例
         self.bubble.tail_frac = head_cx / max(self.width(), 1)
         bx = self.x() + head_cx - int(self.bubble.width() * self.bubble.tail_frac)
-        by = self.y() - self.bubble.height() - 2
+        visible_top = self.y() + round(self.height() * VISIBLE_ART_TOP_RATIO)
+        by = visible_top - self.bubble.height() - VISIBLE_BUBBLE_GAP
         self.bubble.tail_bottom = True
         if by < screen.top():
-            by = self.y() + self.height() + 2
+            visible_bottom = self.y() + round(
+                self.height() * VISIBLE_ART_BOTTOM_RATIO)
+            by = visible_bottom + VISIBLE_BUBBLE_GAP
             self.bubble.tail_bottom = False
         max_bx = max(screen.left(),
                      screen.left() + screen.width() - self.bubble.width())

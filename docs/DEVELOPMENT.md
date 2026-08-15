@@ -56,6 +56,15 @@ python tests/test_zorder.py
 - 成人语录模式由配置项 `adult_quotes` 控制，默认开启，也可以从托盘菜单切换。关闭后，新增成人语录不会进入随机池；开启后会与普通语录合并，并沿用 `idle`、`happy`、`sing` 或 `angry` 情绪。
 - 修改语录或分组后，至少运行 `python tests/test_quote_modes.py` 和 `python tests/test_enhance.py`，确认语录加载、情绪映射、气泡显示和互动触发没有回归。
 
+## 气泡 UI 维护
+
+- 气泡绘制和主题配置统一维护在 `nana/bubble.py`；`PetWindow.say()` 负责把当前宠物状态、成人语录状态和原文传入气泡。
+- `Bubble` 保留透明窗口、点击穿透、置顶和尾巴定位接口。修改绘制时不要移除 `tail_bottom`、`tail_frac` 或 `hide_immediately()`，否则会影响窗口层级、边缘翻转和显式隐藏。
+- 气泡位置使用 `nana/pet_window.py` 中的可见素材上下边界锚点，不要改回透明宠物窗口的外框边缘；Classic/Q 版画布的安全留白属于素材布局的一部分。
+- 气泡主题按 `normal`、`happy`、`sing`、`angry`、`sad`、`sleep` 区分；成人语录不增加气泡标识、不修改或遮挡原文。
+- 连续触发新语录时使用静态更新，只有首次出现和自然超时使用淡入/淡出动画，避免气泡闪烁。
+- 修改气泡排版、主题或动画后，运行 `python tests/test_bubble_ui.py`，并回归 `python tests/test_enhance.py`、`python tests/test_main.py`、`python tests/test_top.py` 和 `python tests/test_zorder.py`。
+
 ## Windows 打包
 
 在 Windows 上可以双击 `packaging/windows/build_standard.bat`，也可以手动执行：
