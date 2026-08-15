@@ -2,6 +2,7 @@
 """连续缩放、旧配置迁移和窗口锚点验证。"""
 import os
 import sys
+from pathlib import Path
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,9 +34,11 @@ results['appearance_names_normalize'] = (
     normalize_appearance('q') == 'q'
     and normalize_appearance('unknown') == 'classic'
 )
+expected_classic_assets = (Path(PROJECT_ROOT) / 'assets' / 'skins' / 'classic').resolve()
+expected_q_assets = (Path(PROJECT_ROOT) / 'assets' / 'skins' / 'q').resolve()
 results['appearance_assets_exist'] = (
-    assets_for_appearance('classic').endswith('assets/skins/classic')
-    and assets_for_appearance('q').endswith('assets/skins/q')
+    Path(assets_for_appearance('classic')).resolve() == expected_classic_assets
+    and Path(assets_for_appearance('q')).resolve() == expected_q_assets
 )
 
 preview_values = []

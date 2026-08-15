@@ -1,0 +1,3 @@
+# CI 和本地测试依赖；不作为桌宠运行时依赖安装。
+-r requirements.txt
+Pillow>=10.0

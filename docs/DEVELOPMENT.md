@@ -19,6 +19,12 @@ python main.py
 python -m pip install -r requirements-build.txt
 ```
 
+运行完整测试时安装测试依赖：
+
+```bash
+python -m pip install -r requirements-test.txt
+```
+
 ## 测试
 
 本地可以按功能运行测试：
@@ -151,6 +157,7 @@ nana-pet/
 ├── tests/                   # 交互、平台、缩放、快捷键和素材测试
 ├── tools/                   # 素材帧和图标生成工具
 ├── packaging/               # Windows/macOS 打包配置与脚本
+├── requirements-test.txt   # CI 和本地测试依赖
 ├── VERSION                 # 当前发布版本
 ├── ASSET_LICENSE.md        # 素材与源码许可证边界
 └── CHANGELOG.md            # 版本更新记录
