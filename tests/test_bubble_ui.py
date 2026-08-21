@@ -7,7 +7,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from qtcompat import QApplication, try_import_qtest
+from qtcompat import QApplication, QFontMetrics, try_import_qtest
 from nana.bubble import Bubble
 from nana.pet_data import (
     ADULT_MODE_QUOTE_LINES,
@@ -35,6 +35,20 @@ bubble.set_text(
     adult=True,
 )
 results['long_text_wraps'] = len(bubble._lines) >= 2
+fm = QFontMetrics(bubble._font)
+results['wrapped_lines_fit_paint_area'] = all(
+    fm.horizontalAdvance(line) <= bubble._text_width() for line in bubble._lines)
+results['max_text_width_accounts_for_margins'] = (
+    bubble.width() <= bubble.MAX_TEXT_WIDTH + bubble.H_PADDING * 2
+    + bubble.PAINT_MARGIN * 2)
+# 截图中的中文重复语录：旧逻辑会把最后一个字排进第一行，
+# 但实际绘制区域较窄，导致右侧出现半个字/被裁切。
+screenshot_like_text = '你妈妈有吗？ 鸭子你真的是个鸭子，你妈妈有吗？ 鸭子有吗？ 您妈有吗？'
+screenshot_bubble = Bubble(False)
+screenshot_bubble.set_text(screenshot_like_text, emotion='normal')
+results['screenshot_like_text_fits'] = all(
+    fm.horizontalAdvance(line) <= screenshot_bubble._text_width()
+    for line in screenshot_bubble._lines)
 results['angry_theme'] = bubble._emotion == 'angry'
 results['adult_state_kept_without_label'] = bubble._adult is True
 results['font_is_larger'] = bubble._font.pointSize() == 11

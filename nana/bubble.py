@@ -77,6 +77,7 @@ class Bubble(QWidget):
 
     MIN_WIDTH = 96
     MAX_TEXT_WIDTH = 300
+    PAINT_MARGIN = 3
     H_PADDING = 14
     V_PADDING = 9
     TAIL_DEPTH = 12
@@ -132,9 +133,16 @@ class Bubble(QWidget):
         fm = QFontMetrics(self._font)
         self._lines = self._wrap_text(self._text, fm, self.MAX_TEXT_WIDTH)
         longest = max(fm.horizontalAdvance(line) for line in self._lines)
-        content_width = longest + self.H_PADDING * 2
-        width = min(self.MAX_TEXT_WIDTH + self.H_PADDING * 2,
-                    max(self.MIN_WIDTH, content_width))
+        # MAX_TEXT_WIDTH 是“文字绘制区域”的宽度，不是整个窗口的宽度。
+        # 窗口还要容纳左右内边距和绘制边距；如果直接用
+        # MAX_TEXT_WIDTH + H_PADDING * 2，换行宽度会比实际 drawText 区域多
+        # 2 * PAINT_MARGIN，最后一个字就可能被窗口右边界裁掉。
+        content_width = (longest + self.H_PADDING * 2
+                         + self.PAINT_MARGIN * 2)
+        max_window_width = (self.MAX_TEXT_WIDTH + self.H_PADDING * 2
+                            + self.PAINT_MARGIN * 2)
+        width = min(max_window_width,
+                    max(self.MIN_WIDTH, round(content_width)))
         line_height = fm.height() + 4
         height = (line_height * len(self._lines)
                   + self.V_PADDING * 2 + self.TAIL_DEPTH + 6)
@@ -219,7 +227,7 @@ class Bubble(QWidget):
         return path
 
     def _paint_geometry(self):
-        margin = 3.0
+        margin = float(self.PAINT_MARGIN)
         if self.tail_bottom:
             body = QRectF(margin, margin, self.width() - margin * 2,
                           self.height() - self.TAIL_DEPTH - margin * 2)
@@ -230,6 +238,12 @@ class Bubble(QWidget):
         cx = max(body.left() + 18,
                  min(body.right() - 18, self.width() * self.tail_frac))
         return body, cx
+
+    def _text_width(self, body=None):
+        """返回绘制文字的真实宽度，必须与换行计算使用同一口径。"""
+        if body is None:
+            body, _ = self._paint_geometry()
+        return max(1.0, body.width() - self.H_PADDING * 2)
 
     def paintEvent(self, event):
         del event
@@ -257,7 +271,7 @@ class Bubble(QWidget):
 
         fm = QFontMetrics(self._font)
         text_x = body.left() + self.H_PADDING
-        text_width = body.width() - self.H_PADDING * 2
+        text_width = self._text_width(body)
         text_y = body.top() + self.V_PADDING
         line_height = fm.height() + 4
         p.setPen(self._color(theme['text']))
