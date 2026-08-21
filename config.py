@@ -57,6 +57,7 @@ else:
 os.makedirs(DATA_DIR, exist_ok=True)
 
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
+QUOTE_LIBRARY_FILE = os.path.join(DATA_DIR, 'quotes_user.json')
 
 SIZE_FACTOR = {'small': 0.4, 'medium': 0.53, 'large': 0.66}   # 对标月薪喵实测尺寸
 BASE_SIZE_FACTOR = SIZE_FACTOR['medium']
@@ -99,7 +100,8 @@ DEFAULT_CONFIG = {
     'click_through': False,
     'autostart': False,
     'speech': True,
-    'adult_quotes': True,     # 成人语录池；保留直播破防/粗口，但可从托盘关闭
+    # True=高强度专属+共用；False=普通专属+共用。保留旧键名兼容已有配置。
+    'adult_quotes': True,
     'always_on_top': True,   # 置顶显示（关闭后会被窗口挡住）
     'next_id': 0,
     'hungry_hours': 3,       # 几小时没喂就喊饿

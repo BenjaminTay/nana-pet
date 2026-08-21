@@ -38,6 +38,7 @@ python tests/test_hotkeys.py
 python tests/test_animation_assets.py
 python tests/test_window_edges.py
 python tests/test_quote_modes.py
+python tests/test_quote_library.py
 ```
 
 Windows 原生窗口层级测试需要在 Windows 上运行：
@@ -51,10 +52,12 @@ python tests/test_zorder.py
 
 ## 语录维护
 
-- 语录原文统一维护在 `assets/quotes.txt`，格式为 `N. 内容`；程序按文件顺序使用 1-based 行号映射，因此新增语录应追加到文件末尾，不要在中间插入或删除行。
-- `nana/pet_data.py` 的 `QUOTES` 负责普通语录的场景分组，`ADULT_QUOTE_GROUPS` 负责成人语录分组；分组同时决定随机触发场景和宠物情绪。
-- 成人语录模式由配置项 `adult_quotes` 控制，默认开启，也可以从托盘菜单切换。关闭后，新增成人语录不会进入随机池；开启后会与普通语录合并，并沿用 `idle`、`happy`、`sing` 或 `angry` 情绪。
-- 修改语录或分组后，至少运行 `python tests/test_quote_modes.py` 和 `python tests/test_enhance.py`，确认语录加载、情绪映射、气泡显示和互动触发没有回归。
+- 内置语录原文维护在 `assets/quotes.txt`，格式为 `N. 内容`；程序按文件顺序使用 1-based 行号映射，因此维护内置原文时新增语录应追加到文件末尾，不要在中间插入或删除行。普通用户应优先使用“管理语录库”，不要直接修改该只读资源文件。
+- `nana/pet_data.py` 的 `QUOTES` 负责运行时场景分组；项目首次启动时使用审核后的默认分类：`adult-only` 19 条、`common` 41 条、`normal-only` 59 条，普通模式共 100 条，成人模式共 60 条。三类不是互斥的两个池子：共用语录会进入两种模式，专属语录只进入对应模式。
+- 普通用户不需要编辑代码：从托盘/菜单栏打开“管理语录库”即可使用表格新增、修改、停用/启用和删除语录，也可以调整显示模式和情绪/场景。数据保存到 `config.QUOTE_LIBRARY_FILE` 指向的 `quotes_user.json`，保存后通过原地重建语录池立即生效。
+- `assets/quotes.txt` 是只读的内置原文来源；用户编辑不会改写它。停用会保留编号并从抽取池移除，删除会移除记录；“恢复内置审核结果”会重新载入内置默认分类。成人语录不在气泡内额外标注，仍保留原句。
+- 配置项 `adult_quotes` 默认开启，也可以从托盘菜单切换：开启时使用“高强度专属 + 双模式共用”，关闭时使用“普通专属 + 双模式共用”；任何历史硬编码语录在显示前也会经过当前模式隔离。旧键名保留用于兼容已有配置。
+- 修改语录或分组后，至少运行 `python tests/test_quote_modes.py`、`python tests/test_quote_library.py` 和 `python tests/test_enhance.py`，确认审核分类、用户库读写、运行时热更新、情绪映射、气泡显示和互动触发没有回归。
 
 ## 气泡 UI 维护
 
@@ -177,13 +180,14 @@ nana-pet/
 ├── .github/workflows/       # CI 测试和跨平台构建
 ├── main.py                  # 入口：托盘、宠物管理和全局快捷键
 ├── pet.py                   # 兼容入口：导出宠物公共 API
-├── nana/                    # 宠物数据、气泡、快捷键和设置模块
+├── nana/                    # 宠物数据、气泡、语录库、快捷键和设置模块
+│   └── quote_library_dialog.py  # 语录库表格编辑器
 ├── mac_native.py            # macOS 窗口层级与 Quartz 快捷键
 ├── config.py                # 配置读写和开机自启
 ├── assets/                  # 运行时素材、皮肤、图标和语录
 ├── assets_raw/              # 素材生成输入
 ├── design/                  # 视觉概念和验收素材
-├── tests/                   # 交互、平台、缩放、快捷键和素材测试
+├── tests/                   # 交互、平台、缩放、语录、快捷键和素材测试
 ├── tools/                   # 素材帧和图标生成工具
 ├── packaging/               # Windows/macOS 打包配置与脚本
 ├── requirements-test.txt   # CI 和本地测试依赖

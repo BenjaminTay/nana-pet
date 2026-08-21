@@ -9,7 +9,14 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from qtcompat import QApplication, try_import_qtest
 from nana.bubble import Bubble
-from nana.pet_data import ADULT_QUOTE_GROUPS, PetState
+from nana.pet_data import (
+    ADULT_MODE_QUOTE_LINES,
+    ADULT_QUOTE_GROUPS,
+    COMMON_QUOTE_LINES,
+    LINES,
+    NORMAL_MODE_QUOTE_LINES,
+    PetState,
+)
 
 import config
 from nana.pet_window import (VISIBLE_ART_TOP_RATIO, PetWindow)
@@ -77,6 +84,36 @@ else:
 pet.say('普通模式测试', emotion=PetState.HAPPY)
 results['pet_keeps_normal_quote_unmarked'] = pet.bubble._adult is False
 results['pet_passes_happy_theme'] = pet.bubble._emotion == 'happy'
+# 成人模式下，历史硬编码普通语录也必须被最后一道内容隔离兜底替换。
+pet.cfg['adult_quotes'] = True
+pet.say(LINES[0])
+results['adult_mode_replaces_normal_quote'] = (
+    pet.bubble._text in ADULT_MODE_QUOTE_LINES
+    and pet.bubble._text != LINES[0])
+common_quote = next(iter(COMMON_QUOTE_LINES))
+pet.say(common_quote)
+results['common_quote_works_in_adult_mode'] = (
+    pet.bubble._text == common_quote and pet.bubble._adult is False)
+pet.cfg['adult_quotes'] = False
+pet.say(LINES[0])
+results['normal_mode_keeps_normal_quote'] = pet.bubble._text == LINES[0]
+pet.say(ADULT_QUOTE_GROUPS['angry'][0])
+results['normal_mode_replaces_adult_quote'] = (
+    pet.bubble._text in NORMAL_MODE_QUOTE_LINES
+    and pet.bubble._text not in ADULT_QUOTE_GROUPS['angry'])
+pet.say(common_quote)
+results['common_quote_works_in_normal_mode'] = (
+    pet.bubble._text == common_quote and pet.bubble._adult is False)
+# 长文本即使在宠物贴近屏幕顶部时，也不能让气泡窗口被屏幕底部裁掉。
+edge_text = '这是一个需要完整显示的超长语录，' * 24
+pet.move(pet.current_screen_geometry().left() + 20,
+         pet.current_screen_geometry().top())
+pet.say(edge_text, emotion=PetState.HAPPY)
+screen = pet.current_screen_geometry()
+results['edge_long_bubble_stays_on_screen'] = (
+    pet.bubble.y() >= screen.top()
+    and pet.bubble.y() + pet.bubble.height()
+    <= screen.top() + screen.height())
 pet.hide_bubble()
 pet.close()
 

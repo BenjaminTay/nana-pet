@@ -13,6 +13,7 @@ import config
 from nana.hotkeys import GlobalHotkeys
 from nana.settings_dialog import SettingsDialog
 from nana.size_dialog import SizeDialog
+from nana.quote_library_dialog import QuoteLibraryDialog
 from pet import (PetWindow, PetState, hourly_egg_for, screen_geometry_for,
                  APPEARANCE_NAMES, emotion_state)
 
@@ -54,9 +55,14 @@ class PetApp:
 
         self.act_speech = QAction('💬 说话', checkable=True, checked=self.cfg['speech'])
         self.act_adult_quotes = QAction(
-            '🔞 成人语录', checkable=True,
+            '🔞 成人语录模式', checkable=True,
             checked=self.cfg.get('adult_quotes', True),
         )
+        self.act_adult_quotes.setStatusTip(
+            '开启：高强度语录 + 双模式共用；关闭：普通语录 + 双模式共用')
+        self.act_quote_library = QAction('🗂️ 管理语录库', self.app)
+        self.act_quote_library.setStatusTip(
+            '用表格新增、修改、停用、删除语录，并调整显示模式')
         self.act_top = QAction('📌 置顶显示', checkable=True,
                                checked=self.cfg['always_on_top'])
         self.act_through = QAction('🖱 鼠标穿透（穿透后从托盘恢复）', checkable=True,
@@ -66,6 +72,7 @@ class PetApp:
         self.act_hide = QAction('🙈 隐藏（点托盘恢复）', checkable=True, checked=False)
         self.act_speech.toggled.connect(self._on_speech)
         self.act_adult_quotes.toggled.connect(self._on_adult_quotes)
+        self.act_quote_library.triggered.connect(self.open_quote_library)
         self.act_top.toggled.connect(self._on_always_on_top)
         self.act_through.toggled.connect(self._on_click_through)
         self.act_autostart.toggled.connect(self._on_autostart)
@@ -213,6 +220,7 @@ class PetApp:
             self.appearance_menu.addAction(act)
         menu.addAction(self.act_speech)
         menu.addAction(self.act_adult_quotes)
+        menu.addAction(self.act_quote_library)
         menu.addAction(self.act_top)
         menu.addAction(self.act_through)
         menu.addAction(self.act_hide)
@@ -302,7 +310,7 @@ class PetApp:
         self.request_save()
 
     def _on_adult_quotes(self, enabled):
-        """切换成人语录池；关闭后只使用普通语录，当前气泡不受影响。"""
+        """切换高强度/普通模式；双模式共用语录在两种模式都保留。"""
         self.cfg['adult_quotes'] = enabled
         self.request_save()
         logging.info('成人语录: %s', enabled)
@@ -348,6 +356,10 @@ class PetApp:
             self.cfg['hotkeys'] = dlg.values()
             config.save(self.cfg)
             self.hotkeys.register_all(self.cfg['hotkeys'])
+
+    def open_quote_library(self):
+        """打开语录库编辑器；保存后数据层会立即刷新所有抽取池。"""
+        QuoteLibraryDialog().exec()
 
     def _on_tray_activated(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:

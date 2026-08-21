@@ -22,7 +22,10 @@ try:
     from PySide6.QtWidgets import (QWidget, QLabel, QMenu, QApplication,
                                    QSystemTrayIcon, QDialog, QVBoxLayout,
                                    QHBoxLayout, QPushButton, QSlider,
-                                   QKeySequenceEdit, QMessageBox)
+                                   QKeySequenceEdit, QMessageBox,
+                                   QAbstractItemView, QComboBox,
+                                   QTableWidget, QTableWidgetItem, QHeaderView,
+                                   QTextEdit, QCheckBox, QFormLayout)
     QT6 = True
 except ImportError:                          # 兼容版：PySide2 5.15（Win7/8）
     from PySide2.QtCore import (Qt, QTimer, QRectF, QPoint, QPointF, QEvent,
@@ -33,7 +36,10 @@ except ImportError:                          # 兼容版：PySide2 5.15（Win7/8
     from PySide2.QtWidgets import (QAction, QWidget, QLabel, QMenu,
                                    QApplication, QSystemTrayIcon, QDialog,
                                    QVBoxLayout, QHBoxLayout, QPushButton,
-                                   QSlider, QKeySequenceEdit, QMessageBox)
+                                   QSlider, QKeySequenceEdit, QMessageBox,
+                                   QAbstractItemView, QComboBox,
+                                   QTableWidget, QTableWidgetItem, QHeaderView,
+                                   QTextEdit, QCheckBox, QFormLayout)
     QT6 = False
 
 # ---- Qt5/Qt6 命名差异（Qt6 用作用域枚举，Qt5 直接挂在 Qt/QEvent/QDialog 上）----

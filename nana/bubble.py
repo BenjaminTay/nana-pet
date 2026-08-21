@@ -147,17 +147,21 @@ class Bubble(QWidget):
             return ['']
         lines = []
         current = ''
-        for ch in text:
-            if ch == '\n':
-                lines.append(current)
+        # 显式换行优先、再按字符拆分。这样中英文、网址和无空格长句
+        # 都不会依赖 Qt 的单行裁切行为；空行也原样保留。
+        for paragraph in text.replace('\r\n', '\n').replace('\r', '\n').split('\n'):
+            if not paragraph:
+                lines.append('')
                 current = ''
                 continue
-            if current and fm.horizontalAdvance(current + ch) > max_width:
-                lines.append(current)
-                current = ch
-            else:
-                current += ch
-        lines.append(current)
+            for ch in paragraph:
+                if current and fm.horizontalAdvance(current + ch) > max_width:
+                    lines.append(current)
+                    current = ch
+                else:
+                    current += ch
+            lines.append(current)
+            current = ''
         return lines
 
     def _bubble_path(self, body, cx, tail_bottom):

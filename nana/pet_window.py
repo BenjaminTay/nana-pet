@@ -18,22 +18,24 @@ from nana.bubble import Bubble
 from nana.size_dialog import SizeDialog
 from nana.pet_data import (
     ASSETS,
-    ADULT_EMOTION_OF,
+    ADULT_CLICK_BAG,
+    ADULT_ONLY_QUOTE_LINES,
     APPEARANCE_NAMES,
     CLICK_BAG,
-    CLICK_BAG_WITH_ADULT,
     EMOTION_OF,
     EMOTION_OF_WITH_ADULT,
     FRAME_INTERVALS,
     GREET,
     LINES,
-    SIGNATURE,
     PetState,
     assets_for_appearance,
     emotion_state,
     head_for_appearance,
     normalize_appearance,
     quote_bag,
+    quote_allowed,
+    quote_for_mode,
+    signature_quote,
     screen_geometry_for,
 )
 
@@ -215,14 +217,25 @@ class PetWindow(QWidget):
     def say(self, text, emotion=None):
         if self.suppressed:        # 隐藏状态：不说话也不弹气泡
             return
+        text = str(text or '')
+        adult_mode = self.cfg.get('adult_quotes', True)
+        # 内容模式是最后一道隔离边界：历史硬编码问候、整点彩蛋、唤醒
+        # 台词等如果属于另一模式，会在这里替换；自由文本不受影响。
+        if (text in EMOTION_OF_WITH_ADULT
+                and not quote_allowed(text, adult=adult_mode)):
+            requested_key = getattr(emotion, 'value', emotion)
+            requested_key = requested_key or getattr(self.state, 'value', 'idle')
+            text, mode_emotion = quote_for_mode(
+                requested_key, adult=adult_mode)
+            if emotion is None:
+                emotion = emotion_state(mode_emotion)
         if emotion is not None and self.state != PetState.SLEEP:
             self.set_state(emotion, loops=2)
         if not self.cfg.get('speech', True):
             return
         bubble_was_visible = self.bubble.isVisible()
         bubble_emotion = emotion if emotion is not None else self.state
-        adult = (self.cfg.get('adult_quotes', True)
-                 and text in ADULT_EMOTION_OF)
+        adult = text in ADULT_ONLY_QUOTE_LINES
         self.bubble.set_text(text, emotion=bubble_emotion, adult=adult)
         self.bubble.show()
         self.update_bubble_pos()   # show 之后再定位，避免闪现旧位置
@@ -238,7 +251,8 @@ class PetWindow(QWidget):
     def say_pool(self, key, emotion=None, chance=1.0):
         if random.random() < chance:
             adult = self.cfg.get('adult_quotes', True)
-            self.say(quote_bag(key, adult=adult).next(), emotion)
+            text = quote_bag(key, adult=adult).next()
+            self.say(text, emotion)
 
     def play_action(self, state, loops=2, quote_key=None, chance=1.0):
         """播放一个明确动作，并保证语句不会把动作状态覆盖掉。"""
@@ -303,13 +317,23 @@ class PetWindow(QWidget):
         self.bubble.tail_frac = head_cx / max(self.width(), 1)
         bx = self.x() + head_cx - int(self.bubble.width() * self.bubble.tail_frac)
         visible_top = self.y() + round(self.height() * VISIBLE_ART_TOP_RATIO)
-        by = visible_top - self.bubble.height() - VISIBLE_BUBBLE_GAP
+        bubble_height = self.bubble.height()
+        screen_top = screen.top()
+        screen_bottom = screen.top() + screen.height()
+        above_y = visible_top - bubble_height - VISIBLE_BUBBLE_GAP
+        below_y = (self.y() + round(self.height() * VISIBLE_ART_BOTTOM_RATIO)
+                   + VISIBLE_BUBBLE_GAP)
+        by = above_y
         self.bubble.tail_bottom = True
-        if by < screen.top():
-            visible_bottom = self.y() + round(
-                self.height() * VISIBLE_ART_BOTTOM_RATIO)
-            by = visible_bottom + VISIBLE_BUBBLE_GAP
+        if above_y < screen_top:
+            # 下方放得下就翻到下方；如果上下都放不下（例如宠物贴着
+            # 顶部且气泡特别高），仍把整个气泡钳在屏幕内，优先保证
+            # 文字完整可读，而不是让窗口被屏幕边缘裁掉。
+            by = below_y
             self.bubble.tail_bottom = False
+            if by + bubble_height > screen_bottom:
+                by = screen_bottom - bubble_height
+        by = max(screen_top, min(by, screen_bottom - bubble_height))
         max_bx = max(screen.left(),
                      screen.left() + screen.width() - self.bubble.width())
         bx = max(screen.left(), min(bx, max_bx))
@@ -553,9 +577,9 @@ class PetWindow(QWidget):
             self.set_state(PetState.HAPPY, loops=2)
             self.say_pool('pet', chance=0.7)
         else:
-            # 身体点击：普通模式全量随机；成人模式包含新增成人语录，表情随情绪走。
+            # 身体点击：两种模式使用完全隔离的全局池，表情随语录情绪走。
             adult = self.cfg.get('adult_quotes', True)
-            bag = CLICK_BAG_WITH_ADULT if adult else CLICK_BAG
+            bag = ADULT_CLICK_BAG if adult else CLICK_BAG
             emotion_of = EMOTION_OF_WITH_ADULT if adult else EMOTION_OF
             q = bag.next()
             self.say(q, emotion=emotion_state(emotion_of[q]))
@@ -583,7 +607,7 @@ class PetWindow(QWidget):
         if self.state == PetState.SLEEP:
             self.set_state(PetState.DANCE, loops=2)
             if random.random() < 0.5:
-                self.say(SIGNATURE)
+                self.say(signature_quote())
 
     # ---------------- 喂食 ----------------
     def feed(self):
