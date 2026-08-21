@@ -44,6 +44,11 @@ VISIBLE_ART_TOP_RATIO = 96 / 444
 VISIBLE_ART_BOTTOM_RATIO = 428 / 444
 VISIBLE_BUBBLE_GAP = 6
 
+# 不把透明窗口的外框精确贴到 macOS 可用区域的顶边。
+# 顶边是原生窗口合成和 Qt 坐标换算最容易出现 1~数像素误差的位置；
+# 留出一小段逻辑像素不会影响桌宠可用空间，但能避免最顶部偶发被吞掉。
+TOP_SCREEN_GUARD = 24
+
 
 class PetWindow(QWidget):
     """一只娜娜小狗 = 一个透明窗口 + 独立AI + 情绪语录"""
@@ -163,6 +168,9 @@ class PetWindow(QWidget):
         if not frames:
             return
         self.frame_idx %= len(frames)
+        # 先固定当前所属屏幕。resize() 后窗口中心可能跨过屏幕边界，
+        # 此时再选屏幕会把同一帧误判到另一块屏幕上。
+        screen = self.current_screen_geometry()
         cache_key = (self.state.value, self.frame_idx, self.facing,
                      round(self.factor, 4))
         pm = self._scaled_frame_cache.get(cache_key)
@@ -177,6 +185,11 @@ class PetWindow(QWidget):
         self.label.setPixmap(pm)
         self.label.resize(pm.size())
         self.resize(pm.size())
+        # 帧/缩放改变窗口尺寸后立即重新限制窗口位置，避免 macOS 最终
+        # 合成时仍保留旧几何尺寸，导致靠屏幕边缘的宠物短暂被截掉。
+        x, y = self.clamp_window_position(self.x(), self.y(), screen)
+        if (x, y) != (self.x(), self.y()):
+            self.move(x, y)
 
     def next_frame(self):
         frames = self.frames[self.state.value]
@@ -270,11 +283,12 @@ class PetWindow(QWidget):
         screen = screen or self.current_screen_geometry()
         max_x = max(screen.left(),
                     screen.left() + screen.width() - self.width())
-        max_y = max(screen.top(),
+        min_y = screen.top() + TOP_SCREEN_GUARD
+        max_y = max(min_y,
                     screen.top() + screen.height() - self.height())
         return (
             max(screen.left(), min(round(x), max_x)),
-            max(screen.top(), min(round(y), max_y)),
+            max(min_y, min(round(y), max_y)),
         )
 
     def update_bubble_pos(self):
@@ -444,7 +458,7 @@ class PetWindow(QWidget):
                 self.set_state(PetState.IDLE, loops=random.randint(1, 3))
             x, y = self.clamp_window_position(x, y, screen)
             # 到达屏幕顶部时保留跳跃状态，但不能让窗口继续越界。
-            if y == screen.top() and self.vy < 0:
+            if y == screen.top() + TOP_SCREEN_GUARD and self.vy < 0:
                 self.vy = 0
             self.move(x, y)
 

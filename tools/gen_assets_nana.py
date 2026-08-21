@@ -167,21 +167,30 @@ def canvas(master):
 
 
 def place(base, sprite, dx=0, dy=0):
-    """直接覆盖粘贴（不带mask，避免半透明特效像素被二次衰减）"""
+    """居中、脚底对齐粘贴（不带 mask，避免半透明像素被二次衰减）。
+
+    ``sprite`` 可能比母图更高或更宽。不能再固定粘到 ``PAD``，否则
+    放大后的帧会在临时画布内部先被截掉；统一按底边对齐，利用画布
+    预留的透明空间容纳放大的完整轮廓。
+    """
     out = base.copy()
-    out.paste(sprite, (PAD + dx, PAD + dy))
+    x = (base.width - sprite.width) // 2 + dx
+    y = base.height - sprite.height + dy
+    out.paste(sprite, (x, y))
     return out
 
 
 def squash_img(img, fy, align_bottom=True, fx=1.0):
+    """缩放并返回完整 sprite，位置由 ``place`` 负责底边对齐。
+
+    旧实现把放大后的图片粘回原尺寸 ``(w, h)``，当 ``fy > 1`` 时使用
+    负 y 坐标，导致顶部内容在生成阶段永久丢失。返回实际放大后的
+    图片，让外层透明画布承接超出的安全空间。
+    """
     w, h = img.size
     w2 = max(10, int(w * fx))
     h2 = max(10, int(h * fy))
-    img2 = img.resize((w2, h2), Image.LANCZOS)
-    out = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    ox = (w - w2) // 2
-    out.paste(img2, (ox, h - h2 if align_bottom else 0), img2)
-    return out
+    return img.resize((w2, h2), Image.LANCZOS)
 
 
 def tilt_img(img, deg):

@@ -5,10 +5,16 @@ import sys
 from pathlib import Path
 from statistics import median
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
+
+from tools.install_action_strips import (
+    connected_components,
+    extract_frame_components,
+)
+from tools.gen_assets_nana import squash_img
 
 
 SKINS = ('classic', 'q')
@@ -99,7 +105,48 @@ def background_edge_leakage(path):
         return count
 
 
+def top_row_width(path):
+    """返回可见轮廓第一行的宽度，用于识别顶部被截后的平直宽边。"""
+    with Image.open(path).convert('RGBA') as image:
+        alpha = image.getchannel('A')
+        bbox = alpha.getbbox()
+        if bbox is None:
+            return 0
+        pixels = alpha.load()
+        return sum(pixels[x, bbox[1]] > 0 for x in range(image.width))
+
+
 results = {}
+
+# 动作条回归：主体可以略微越过等宽 panel 分割线，但不能因此丢失轮廓。
+synthetic_strip = Image.new('RGBA', (200, 60), (0, 0, 0, 0))
+synthetic_draw = ImageDraw.Draw(synthetic_strip)
+synthetic_draw.rectangle((35, 10, 115, 50), fill=(120, 80, 40, 255))
+synthetic_draw.rectangle((130, 8, 180, 52), fill=(80, 120, 180, 255))
+synthetic_components = connected_components(synthetic_strip)
+synthetic_frame = extract_frame_components(
+    synthetic_strip,
+    frame_count=2,
+    index=0,
+    margin=8,
+    components=synthetic_components,
+)
+results['action_strip_cross_panel_component_preserved'] = (
+    synthetic_frame is not None
+    and synthetic_frame.getchannel('A').getbbox() == (0, 0, 81, 41)
+)
+
+# 放大帧不能在原尺寸临时画布内用负坐标粘贴，否则顶部轮廓会先丢失。
+squash_probe = Image.new('RGBA', (20, 20), (0, 0, 0, 0))
+squash_probe.paste((220, 60, 40, 255), (0, 0, 20, 4))
+squash_probe.paste((40, 80, 220, 255), (0, 16, 20, 20))
+squashed = squash_img(squash_probe, 1.25)
+probe_top = squash_img(squash_probe, 1.25).getpixel((10, 0))
+results['expanded_squash_preserves_top_content'] = (
+    squashed.size == (20, 25)
+    and probe_top[0] > probe_top[2]
+)
+
 for skin in SKINS:
     skin_dir = PROJECT_ROOT / 'assets' / 'skins' / skin
     idle_frames = sorted((skin_dir / 'idle').glob('frame_*.png'))
@@ -145,6 +192,19 @@ for skin in SKINS:
     results[f'{skin}_happy_baseline_stable'] = (
         len(set(happy_bottoms)) == 1
         and happy_bottoms[0] == idle_bottom
+    )
+
+    # 待机/跳跃的旧第 2 帧曾从内部较宽位置开始，形成肉眼可见的平直裁切边。
+    idle_reference_top = top_row_width(skin_dir / 'idle' / 'frame_001.png')
+    jump_reference_top = top_row_width(skin_dir / 'jump' / 'frame_003.png')
+    results[f'{skin}_idle_top_contour_not_cropped'] = all(
+        top_row_width(skin_dir / 'idle' / name)
+        <= max(1, round(idle_reference_top * 1.75))
+        for name in ('frame_002.png', 'frame_004.png')
+    )
+    results[f'{skin}_jump_top_contour_not_cropped'] = (
+        top_row_width(skin_dir / 'jump' / 'frame_002.png')
+        <= max(1, round(jump_reference_top * 1.75))
     )
 
 ok = all(results.values())

@@ -47,7 +47,7 @@ python tests/test_top.py
 python tests/test_zorder.py
 ```
 
-`test_animation_assets.py` 会检查 Classic/Q 版全部状态的帧数、画布尺寸、透明边缘、安全留白、背景泄漏、idle 回退和 `happy` 动画基线。
+`test_animation_assets.py` 会检查 Classic/Q 版全部状态的帧数、画布尺寸、透明边缘、安全留白、背景泄漏、idle 回退和 `happy` 动画基线；同时检查待机/跳跃帧的顶部轮廓连续性，避免“画布有透明留白但角色轮廓已经被截断”的问题漏检。
 
 ## 语录维护
 
@@ -158,7 +158,11 @@ python tools/normalize_runtime_assets.py \
   --top-margin 48 \
   --bottom-margin 16 \
   --min-canvas-height 444
+
+python tools/repair_top_cropped_frames.py --assets-dir assets/skins
 ```
+
+放大帧必须先保留完整 sprite，再由透明画布按脚底对齐；不要把超过母图尺寸的放大帧用负坐标粘回固定尺寸临时画布。旧帧若已经丢失顶部像素，重新增加透明留白无法恢复，应使用同动作的完整参考帧运行 `repair_top_cropped_frames.py` 后再验收。
 
 修改动作条后，应运行 `python tests/test_animation_assets.py`，再重新构建 macOS 或 Windows 安装包。
 

@@ -120,18 +120,18 @@ class PetApp:
             screen = screen_geometry_for(
                 QPoint(saved.get('x', 100) + pet.width() // 2,
                        saved.get('y', 100) + pet.height() // 2))
-            max_x = screen.left() + screen.width() - pet.width()
-            max_y = screen.top() + screen.height() - pet.height()
-            x = max(screen.left(), min(saved.get('x', 100), max_x))
-            y = max(screen.top(), min(saved.get('y', 100), max_y))
+            x, y = pet.clamp_window_position(
+                saved.get('x', 100), saved.get('y', 100), screen)
             pet.move(x, y)
             pet.ground_y = y
         else:
             screen = QApplication.primaryScreen().availableGeometry()
-            pet.move(random.randint(screen.left() + 50,
-                                    screen.left() + screen.width()
-                                    - pet.width() - 50),
-                     screen.top() + screen.height() - pet.height() - 30)
+            x = random.randint(screen.left() + 50,
+                               screen.left() + screen.width()
+                               - pet.width() - 50)
+            y = screen.top() + screen.height() - pet.height() - 30
+            x, y = pet.clamp_window_position(x, y, screen)
+            pet.move(x, y)
             pet.ground_y = pet.y()
         # 重启后恢复穿透设置（配置开启但进程重启后 window flag 会丢）
         if self.cfg.get('click_through'):
@@ -180,7 +180,8 @@ class PetApp:
                 x = (g.left() + g.width() - pet.width() - 40
                      - i * (pet.width() + 10))
                 y = g.top() + g.height() - pet.height() - 10
-                pet.move(max(g.left() + 10, x), y)
+                x, y = pet.clamp_window_position(x, y, g)
+                pet.move(x, y)
                 pet.ground_y = y
         self.request_save()
         logging.info('复位位置')
