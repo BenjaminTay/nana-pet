@@ -162,6 +162,8 @@ python tools/normalize_runtime_assets.py \
 python tools/repair_top_cropped_frames.py --assets-dir assets/skins
 ```
 
+macOS 的宠物和气泡使用透明无边框 `NSWindow`。`mac_native.apply_window_level()` 必须关闭 AppKit 默认的原生窗口阴影（`hasShadow=False`）：AppKit 会沿透明窗口的 alpha 轮廓生成阴影，运行时会在白底上形成素材中不存在的黑色描边；气泡的阴影由自身绘制逻辑负责。修改窗口层级或恢复显示逻辑时，要保留这项设置。
+
 放大帧必须先保留完整 sprite，再由透明画布按脚底对齐；不要把超过母图尺寸的放大帧用负坐标粘回固定尺寸临时画布。旧帧若已经丢失顶部像素，重新增加透明留白无法恢复，应使用同动作的完整参考帧运行 `repair_top_cropped_frames.py` 后再验收。
 
 修改动作条后，应运行 `python tests/test_animation_assets.py`，再重新构建 macOS 或 Windows 安装包。

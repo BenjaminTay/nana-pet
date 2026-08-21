@@ -9,8 +9,38 @@ import sys
 FROZEN = getattr(sys, 'frozen', False)
 IS_MAC = sys.platform == 'darwin'
 
-# PyInstaller 会为打包后的模块设置绝对 __file__，统一从当前模块定位只读资源。
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+def _resource_base_dir():
+    """定位源码和 PyInstaller macOS/Windows 包中的资源根目录。
+
+    PyInstaller 在不同模式下可能让 ``__file__``、``sys._MEIPASS`` 和
+    ``sys.executable`` 分别落在 Resources、临时解压目录或可执行文件目录。
+    只依赖其中一个路径会让皮肤目录找不到，随后回退到旧版 ``assets/``，
+    重新显示未经边缘清理的素材。优先选择实际包含运行时资源的候选目录。
+    """
+    module_dir = os.path.dirname(os.path.abspath(__file__))
+    executable_dir = os.path.dirname(os.path.abspath(sys.executable))
+    candidates = [
+        module_dir,
+        getattr(sys, '_MEIPASS', None),
+        executable_dir,
+        os.path.join(executable_dir, os.pardir, 'Resources'),
+        os.path.join(executable_dir, os.pardir, '_internal'),
+    ]
+    seen = set()
+    for candidate in candidates:
+        if not candidate:
+            continue
+        candidate = os.path.abspath(candidate)
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if os.path.isfile(os.path.join(candidate, 'assets', 'quotes.txt')):
+            return candidate
+    return module_dir
+
+
+# 优先从真正包含 assets/quotes.txt 的目录定位 PyInstaller 只读资源。
+BASE_DIR = _resource_base_dir()
 
 if IS_MAC:
     # 应用包可能位于只读目录，用户数据不能写进 .app。

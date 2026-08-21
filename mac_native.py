@@ -97,6 +97,10 @@ def apply_window_level(widget, always_on_top=True, force_front=False):
     if nswindow is None:
         return False
     try:
+        # 宠物和气泡都是带透明背景的无边框窗口，视觉阴影已经由素材/Qt
+        # 自己负责。AppKit 默认会沿透明窗口的 alpha 轮廓绘制原生阴影，
+        # 在白色背景上会表现为紧贴角色的黑色描边。
+        nswindow.setHasShadow_(False)
         nswindow.setHidesOnDeactivate_(False)
         if always_on_top:
             nswindow.setLevel_(NSFloatingWindowLevel)
