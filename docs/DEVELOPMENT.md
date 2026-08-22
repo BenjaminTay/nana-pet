@@ -133,11 +133,14 @@ git push origin v0.2.0
 ### 生成动画帧和图标
 
 ```bash
+# 从仓库外的母图生成 Classic 正式皮肤的动画帧
+NANA_MASTER_IMAGE=/absolute/path/to/source.png \
+NANA_ASSETS_DIR=/absolute/path/to/nana-pet/assets/skins/classic \
 python tools/gen_assets_nana.py
 python tools/gen_icon.py
 ```
 
-生成器支持通过环境变量指定原始素材和输出目录，避免依赖固定路径：
+生成器不再依赖仓库内的原始素材，必须通过环境变量指定母图和输出目录：
 
 ```bash
 NANA_MASTER_IMAGE=/absolute/path/to/source.png \
@@ -185,8 +188,7 @@ nana-pet/
 │   └── quote_library_dialog.py  # 语录库表格编辑器
 ├── mac_native.py            # macOS 窗口层级与 Quartz 快捷键
 ├── config.py                # 配置读写和开机自启
-├── assets/                  # 运行时素材、皮肤、图标和语录
-├── assets_raw/              # 素材生成输入
+├── assets/                  # 当前运行时素材：skins、图标、语录和辅助数据
 ├── design/                  # 视觉概念和验收素材
 ├── tests/                   # 交互、平台、缩放、语录、快捷键和素材测试
 ├── tools/                   # 素材帧和图标生成工具

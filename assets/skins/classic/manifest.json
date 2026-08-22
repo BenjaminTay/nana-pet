@@ -1,7 +1,7 @@
 {
   "id": "classic",
   "name": "经典高清版",
-  "master": "design/visual-concepts/round-1/classic-hd-master-v1.png",
+  "master": "design/visual-concepts/round-1/masters/classic-hd-master-v1.png",
   "states": 15,
   "frames": 68,
   "canvas": [389, 444],

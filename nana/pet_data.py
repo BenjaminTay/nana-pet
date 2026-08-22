@@ -33,12 +33,14 @@ def normalize_appearance(value):
 
 
 def assets_for_appearance(appearance):
-    """返回形象素材根目录；缺少皮肤时回退到旧版 assets/。"""
+    """返回形象对应的正式运行时素材根目录。"""
     key = normalize_appearance(appearance)
     skin_root = os.path.join(SKINS_DIR, key)
-    if os.path.isdir(os.path.join(skin_root, 'idle')):
-        return skin_root
-    return ASSETS
+    if not os.path.isdir(os.path.join(skin_root, 'idle')):
+        relative_root = os.path.relpath(skin_root, BASE_DIR)
+        raise RuntimeError(
+            f'缺少 {relative_root}/idle/ 运行时素材，请先生成或恢复对应皮肤资源。')
+    return skin_root
 
 
 def head_for_appearance(appearance):

@@ -1,7 +1,7 @@
 {
   "id": "q",
   "name": "Q版",
-  "master": "design/visual-concepts/round-1/q-pet-master-v1.png",
+  "master": "design/visual-concepts/round-1/masters/q-pet-master-v1.png",
   "states": 15,
   "frames": 68,
   "canvas": [393, 444],

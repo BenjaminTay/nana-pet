@@ -19,12 +19,10 @@ except ImportError:
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = PROJECT_ROOT
-_WINDOWS_SRC = r'C:\Users\Administrator\Desktop\nana\白底图.png'
-SRC = os.environ.get(
-    'NANA_MASTER_IMAGE',
-    _WINDOWS_SRC if os.path.exists(_WINDOWS_SRC)
-    else os.path.join(BASE, 'assets_raw', 'nana_12.png'))
-ASSETS = os.environ.get('NANA_ASSETS_DIR', os.path.join(BASE, 'assets'))
+SRC = os.environ.get('NANA_MASTER_IMAGE')
+# 默认生成当前正式的 Classic 皮肤；Q 版或其他皮肤通过 NANA_ASSETS_DIR 指定。
+ASSETS = os.environ.get(
+    'NANA_ASSETS_DIR', os.path.join(BASE, 'assets', 'skins', 'classic'))
 ACTION_STATES = {'eat', 'dance', 'sit', 'sleep', 'happy'}
 PRESERVE_ACTIONS = os.environ.get('NANA_PRESERVE_ACTIONS', '1').lower() not in {
     '0', 'false', 'no', 'off'
@@ -114,6 +112,11 @@ def build_icon_canvas(master, head, size=256):
 
 
 def load_master():
+    if not SRC:
+        raise RuntimeError(
+            '未设置 NANA_MASTER_IMAGE。仓库不再保存原始母图，请通过环境变量指定输入文件。')
+    if not os.path.isfile(SRC):
+        raise FileNotFoundError(f'NANA_MASTER_IMAGE 不存在：{SRC}')
     img = Image.open(SRC).convert('RGBA')
     a = img.getchannel('A')
     w, h = img.size

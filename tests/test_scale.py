@@ -40,6 +40,14 @@ results['appearance_assets_exist'] = (
     Path(assets_for_appearance('classic')).resolve() == expected_classic_assets
     and Path(assets_for_appearance('q')).resolve() == expected_q_assets
 )
+legacy_runtime_states = (
+    'angry', 'cry', 'dance', 'eat', 'happy', 'idle', 'jump', 'run',
+    'sad', 'shy', 'sing', 'sit', 'sleep', 'spin', 'walk',
+)
+results['legacy_runtime_assets_absent'] = not any(
+    (Path(PROJECT_ROOT) / 'assets' / state).is_dir()
+    for state in legacy_runtime_states
+)
 
 preview_values = []
 dialog = SizeDialog(1.0, on_preview=preview_values.append)

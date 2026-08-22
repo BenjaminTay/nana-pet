@@ -4,18 +4,18 @@
 
 ## 文件
 
-- `app-icon-current.png`：替换前的应用图标，用于对照。
-- `app-icon-v1.png`：新的应用图标标准图，已经同步导出到 `assets/icon.png`、`assets/icon.ico` 和 `assets/icon.icns`。
-- `classic-hd-master-v1.png`：经典高清版角色标准图。
-- `q-pet-master-v1.png`：Q版角色标准图，采用圆润比例和轻微拼豆/积木质感。
+- `icons/app-icon-current.png`：替换前的应用图标，用于对照。
+- `icons/app-icon-v1.png`：新的应用图标标准图，已经同步导出到 `assets/icon.png`、`assets/icon.ico` 和 `assets/icon.icns`。
+- `masters/classic-hd-master-v1.png`：经典高清版角色标准图。
+- `masters/q-pet-master-v1.png`：Q版角色标准图，采用圆润比例和轻微拼豆/积木质感。
 
 ## 当前运行时状态
 
-- `assets/skins/classic/`：经典高清版，15 种状态、66 帧。
-- `assets/skins/q/`：Q版，15 种状态、66 帧。
+- `assets/skins/classic/`：经典高清版，15 种状态、68 帧。
+- `assets/skins/q/`：Q版，15 种状态、68 帧。
 - 宠物右键菜单和托盘菜单都支持切换形象。
 - 每只宠物独立保存 `appearance`，切换时保留位置、大小、动作和喂食状态。
-- 原有 `assets/` 帧目录保留，作为兼容回退和回滚层。
+- 当前运行时只从 `assets/skins/` 读取正式皮肤帧；旧版根目录帧已退役，历史版本仍可从 Git 历史恢复。
 
 ## 验收结论
 

@@ -151,7 +151,9 @@ class PetWindow(QWidget):
     def load_frames(self):
         idle_frames = self._load_folder('idle')
         if not idle_frames:
-            raise RuntimeError('assets/idle/ 下没有图片！请先运行 tools/gen_assets_nana.py')
+            raise RuntimeError(
+                f'assets/skins/{self.appearance}/idle/ 下没有图片！'
+                '请先运行 tools/gen_assets_nana.py 或检查资源目录。')
         for s in PetState:
             frames = self._load_folder(s.value)
             self.frames[s.value] = frames if frames else idle_frames

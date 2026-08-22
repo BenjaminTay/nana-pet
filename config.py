@@ -14,8 +14,8 @@ def _resource_base_dir():
 
     PyInstaller 在不同模式下可能让 ``__file__``、``sys._MEIPASS`` 和
     ``sys.executable`` 分别落在 Resources、临时解压目录或可执行文件目录。
-    只依赖其中一个路径会让皮肤目录找不到，随后回退到旧版 ``assets/``，
-    重新显示未经边缘清理的素材。优先选择实际包含运行时资源的候选目录。
+    只依赖其中一个路径会让正式皮肤目录找不到，导致运行时无法加载
+    当前的边缘清理素材。优先选择实际包含运行时资源的候选目录。
     """
     module_dir = os.path.dirname(os.path.abspath(__file__))
     executable_dir = os.path.dirname(os.path.abspath(sys.executable))

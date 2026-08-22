@@ -20,7 +20,7 @@ SIZES = (16, 24, 32, 48, 64, 128, 256)
 ICON_SOURCE = os.environ.get(
     'NANA_ICON_SOURCE',
     os.path.join(BASE, 'design', 'visual-concepts', 'round-1',
-                 'app-icon-v1.png'),
+                 'icons', 'app-icon-v1.png'),
 )
 if os.path.isfile(ICON_SOURCE):
     # 新版图标是独立的品牌素材，不再从低清动画帧中截取狗头。
